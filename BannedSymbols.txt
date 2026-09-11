@@ -1,0 +1,69 @@
+M:Microsoft.EntityFrameworkCore.ChangeTracking.ChangeTracker.Clear();Shouldn't be necessary to use this in tests anymore, since 'Ctx' creates new DbContexts
+
+T:Newtonsoft.Json.JsonConvert;Use System.Text.Json
+M:System.ArgumentNullException.#ctor(System.String);Use ArgumentNullException.ThrowIfNull
+M:System.Array.Empty`1;Use '[]'
+M:System.Array.IndexOf(System.Array,System.Object);Use generic overload
+M:System.Boolean.Parse(System.String);Use bool.TryParse
+M:System.Collections.Generic.HashSet`1.#ctor(System.Collections.Generic.IEnumerable{`0});Use .ToHashSet()
+M:System.Collections.Generic.List`1.#ctor(System.Collections.Generic.IEnumerable{`0});Use .ToList()
+M:System.Collections.Generic.List`1.#ctor(System.Int32);Use default constructor or collection expression
+P:System.Collections.ObjectModel.ReadOnlyCollection`1.Empty;Use '[]'
+M:System.DateOnly.CompareTo(System.DateOnly);Use the '<' or '>' operators
+M:System.DateOnly.Equals(System.DateOnly);Use the '==' operator
+M:System.DateOnly.Equals(System.Object);Use the '==' operator
+M:System.DateOnly.Parse(System.String);Use DateOnly.TryParse or constructor
+M:System.DateTime.Compare(System.DateTime,System.DateTime);Use the '<' or '>' operators
+M:System.DateTime.CompareTo(System.DateTime);Use the '<' or '>' operators
+M:System.DateTime.Equals(System.DateTime);Use the '==' operator
+M:System.DateTime.Equals(System.Object);Use the '==' operator
+P:System.DateTime.Now;Use TimeProvider
+M:System.DateTime.Parse(System.String);Use DateTime.TryParse
+M:System.DateTime.ParseExact(System.String,System.String,System.IFormatProvider);Use DateTime.TryParseExact
+M:System.DateTime.ParseExact(System.String,System.String,System.IFormatProvider,System.Globalization.DateTimeStyles);Use DateTime.TryParseExact
+P:System.DateTime.Today;Use TimeProvider
+P:System.DateTime.UtcNow;Use TimeProvider
+M:System.DateTimeOffset.Compare(System.DateTimeOffset,System.DateTimeOffset);Use the '<' or '>' operators
+M:System.DateTimeOffset.CompareTo(System.DateTimeOffset);Use the '<' or '>' operators
+M:System.DateTimeOffset.Equals(System.DateTimeOffset);Use the '==' operator
+M:System.DateTimeOffset.Equals(System.Object);Use the '==' operator
+P:System.DateTimeOffset.Now;Use TimeProvider
+M:System.DateTimeOffset.Parse(System.String);Use DateTimeOffset.TryParse
+P:System.DateTimeOffset.UtcNow;Use TimeProvider
+M:System.Decimal.Equals(System.Decimal);Use the '==' operator
+M:System.Decimal.Parse(System.String);Use decimal.TryParse
+M:System.Double.Parse(System.String);Use double.TryParse
+M:System.Enum.Equals(System.Object);Use the '==' operator
+M:System.Enum.GetNames(System.Type);Use GetNames with type parameter
+M:System.Enum.GetValues(System.Type);Use GetValues with type parameter
+M:System.Enum.Parse(System.Type,System.String);Use Enum.TryParse
+M:System.Enum.Parse(System.Type,System.String,System.Boolean);Use Enum.TryParse
+M:System.Enum.Parse`1(System.String);Use Enum.TryParse
+M:System.Enum.Parse`1(System.String,System.Boolean);Use Enum.TryParse
+M:System.Enum.TryParse(System.Type,System.String,System.Object@);Use TryParse with type parameter
+M:System.Enum.TryParse(System.Type,System.String,System.Boolean,System.Object@);Use TryParse with type parameter
+M:System.Int32.Equals(System.Int32);Use the '==' operator
+M:System.Int32.Parse(System.String);Use int.TryParse
+M:System.Int64.Parse(System.String);Use long.TryParse
+M:System.Linq.Enumerable.Empty`1;Use '[]'
+M:System.Nullable`1.GetValueOrDefault(`0);Use coalesce expression (x ?? y)
+M:System.Random.#ctor;Use Random.Shared
+M:System.String.#ctor(System.ReadOnlySpan{System.Char});Use the string directly, or call ToString()
+M:System.String.ToString();string.ToString() is pointless, just use the string directly
+M:System.String.ToString(System.IFormatProvider);string.ToString() is pointless, just use the string directly
+M:System.Text.Json.JsonSerializer.Deserialize`1(System.IO.Stream,System.Text.Json.JsonSerializerOptions);Use async overload
+P:System.Threading.CancellationToken.None
+M:System.Threading.Tasks.Task.GetAwaiter;Use await
+M:System.Threading.Tasks.Task.Wait;Use await
+M:System.Threading.Tasks.Task.Wait(System.Threading.CancellationToken);Use await
+M:System.Threading.Tasks.Task`1.ConfigureAwait(System.Boolean);ConfigureAwait(false) has no effect in ASP.NET Core, so there is no need to use it
+P:System.Threading.Tasks.Task`1.Result;Use await
+M:System.Threading.Thread.Sleep(System.Int32);Use Task.Delay
+M:System.Threading.Thread.Sleep(System.TimeSpan);Use Task.Delay
+M:System.TimeOnly.Parse(System.String);Use TimeOnly.TryParse or constructor
+T:System.Tuple`1;Use records or value tuples (those with parenthesis)
+T:System.Tuple`2;Use records or value tuples (those with parenthesis)
+T:System.Tuple`3;Use records or value tuples (those with parenthesis)
+T:System.Tuple`4;Use records or value tuples (those with parenthesis)
+M:System.Xml.Linq.XDocument.Save(System.IO.Stream);Use SaveAsync
+M:System.Xml.Linq.XDocument.Save(System.IO.Stream,System.Xml.Linq.SaveOptions);Use SaveAsync

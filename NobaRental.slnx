@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/1. Solution assets/">
+    <File Path=".editorconfig" />
+    <File Path="analyzers.globalconfig" />
+    <File Path="BannedSymbols.txt" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="nuget.config" />
+  </Folder>
+  <Folder Name="/2. AppHost/">
+    <Project Path="NobaRental-AppHost\NobaRental.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/3. Frontend/">
+    <Project Path="NobaRental-Frontend\src\NobaRental.Frontend.Client\NobaRental.Frontend.Client.csproj" />
+    <Project Path="NobaRental-Frontend\src\NobaRental.Frontend.Server\NobaRental.Frontend.Server.csproj" />
+  </Folder>
+  <Folder Name="/4. Backend/">
+    <Project Path="NobaRental-Backend/src/NobaRental.Backend.Data/NobaRental.Backend.Data.csproj" Id="25d9435a-378d-4573-bba7-088a0a035a91" />
+    <Project Path="NobaRental-Backend\src\NobaRental.Backend.WebApi\NobaRental.Backend.WebApi.csproj" />
+    <Project Path="NobaRental.Backend.WebApi.Client/NobaRental.Backend.WebApi.Client.csproj" Id="25ef5632-9452-466d-b9e0-00a0cd835b45" />
+  </Folder>
+  <Folder Name="/5. Shared/">
+    <Project Path="NobaRental-Shared\NobaRental.Shared.ServiceDefaults\NobaRental.Shared.ServiceDefaults.csproj" />
+  </Folder>
+</Solution>

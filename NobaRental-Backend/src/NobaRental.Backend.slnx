@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/1. Web API/">
+    <Project Path="NobaRental.Backend.WebApi/NobaRental.Backend.WebApi.csproj" />
+  </Folder>  
+</Solution>

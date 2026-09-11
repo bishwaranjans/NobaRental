@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.5.3">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <NoWarn>$(NoWarn);Proj0007;Proj1300</NoWarn>
+    <UserSecretsId>c1f231ad-fe85-4bb6-8db6-2b83b9ecd8dc</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NobaRental-Backend\src\NobaRental.Backend.WebApi\NobaRental.Backend.WebApi.csproj" />
+    <ProjectReference Include="..\NobaRental-Frontend\src\NobaRental.Frontend.Server\NobaRental.Frontend.Server.csproj" />
+  </ItemGroup>
+
+</Project>

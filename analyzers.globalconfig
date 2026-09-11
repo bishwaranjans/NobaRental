@@ -1,0 +1,81 @@
+is_global = true
+
+# Disable RS0030 (banned symbol) globally, which also disables it for source generated code.
+# It is enabled again in .editorconfig, so that it only takes effect on the regular code.
+dotnet_diagnostic.RS0030.severity = none
+
+# MSG0005: Message without any registered handler
+dotnet_diagnostic.MSG0005.severity = none
+
+
+###############################
+# .NET project file analyzers #
+###############################
+# Proj0003: Define usings explicit
+dotnet_diagnostic.Proj0003.severity = none
+
+# Proj0010: Define the project output type explicitly
+dotnet_diagnostic.Proj0010.severity = none
+
+# Proj0020: Item group should only contain nodes of a single type
+dotnet_diagnostic.Proj0020.severity = none
+
+# Proj0023: Use forward slashes in paths
+dotnet_diagnostic.Proj0023.severity = none
+
+# Proj0039: Treat all warnings as errors is considered a bad practice
+dotnet_diagnostic.Proj0039.severity = none
+
+# Proj0040: Run NuGet security audits on transitive dependencies too
+dotnet_diagnostic.Proj0040.severity = none
+
+# Proj0042: Enable <ContinuousIntegrationBuild> when running in CI pipeline
+dotnet_diagnostic.Proj0042.severity = none
+
+# Proj0043: Use lock files
+dotnet_diagnostic.Proj0043.severity = none
+
+# Proj0048: Define <LangVersion> with an explicit version number
+dotnet_diagnostic.Proj0048.severity = none
+
+# Proj0049: Prefer the latest released language version
+dotnet_diagnostic.Proj0049.severity = none
+
+# Proj0201: Define the project version explicitly
+dotnet_diagnostic.Proj0201.severity = none
+
+# Proj0204: Define the project tags explicitly
+dotnet_diagnostic.Proj0204.severity = none
+
+# Proj0205: Define the project repository URL explicitly
+dotnet_diagnostic.Proj0205.severity = none
+
+# Proj0206: Define the project URL explicitly
+dotnet_diagnostic.Proj0206.severity = none
+
+# Proj0207: Define the project copyright explicitly
+dotnet_diagnostic.Proj0207.severity = none
+
+# Proj0208: Define the project release notes explicitly
+dotnet_diagnostic.Proj0208.severity = none
+
+# Proj0400: Define IsPublishable explicitly
+dotnet_diagnostic.Proj0400.severity = none
+
+# Proj0451: Set IsPublishable to false for test projects
+dotnet_diagnostic.Proj0451.severity = none
+
+# Proj1001: Use the xunit.analyzers package
+dotnet_diagnostic.Proj1001.severity = none
+
+# Proj1200: Exclude private assets as analyzer dependency
+dotnet_diagnostic.Proj1200.severity = none
+
+# Proj1300: Remove the project reference to executable
+dotnet_diagnostic.Proj1300.severity = none
+
+# Proj3000: Use UTF-8 BOM encoding for project files
+dotnet_diagnostic.Proj3000.severity = none
+
+# Proj3002: Remove commented-out code
+dotnet_diagnostic.Proj3002.severity = none
