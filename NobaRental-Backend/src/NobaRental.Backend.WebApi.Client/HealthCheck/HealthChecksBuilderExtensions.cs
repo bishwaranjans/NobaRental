@@ -8,13 +8,13 @@ public static class HealthChecksBuilderExtensions
     public static IHealthChecksBuilder AddNobaRentalBackend(
        this IHealthChecksBuilder builder,
        string name = "api:Noba Rental Backend API",
-       IWeatherForecastClient? client = null,
+       IRentalBookingApiClient? client = null,
        HealthStatus? failureStatus = null,
        IEnumerable<string>? tags = null)
     {
         return builder.Add(new HealthCheckRegistration(
             name: name,
-            factory: sp => new NobaRentalHealthCheck(client ?? sp.GetRequiredService<IWeatherForecastClient>()),
+            factory: sp => new NobaRentalHealthCheck(client ?? sp.GetRequiredService<IRentalBookingApiClient>()),
             failureStatus: failureStatus,
             tags: tags));
     }

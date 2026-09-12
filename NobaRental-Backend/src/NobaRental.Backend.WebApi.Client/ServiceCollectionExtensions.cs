@@ -12,7 +12,9 @@ public static class ServiceCollectionExtensions
         {
             IHttpClientBuilder[] clients =
             [
-                services.AddNobaRentalApiClient<IWeatherForecastClient>(baseUri)
+                services.AddNobaRentalApiClient<IRentalBookingApiClient>(baseUri),
+                services.AddNobaRentalApiClient<ICarApiClient>(baseUri),
+                services.AddNobaRentalApiClient<IStationApiClient>(baseUri)
             ];
 
             if (httpClientBuilderAction is not null)

@@ -1,5 +1,6 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using MudBlazor.Services;
 using NobaRental.Frontend.Server.Components;
 using NobaRental.Frontend.Server.Settings;
 using NobaRental.Frontend.Server.Startups;
@@ -11,12 +12,14 @@ builder.AddServiceDefaults();
 
 var settings = builder.Configuration.Get<AppSettings>() ?? new AppSettings();
 builder.Services.AddSingleton(settings);
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+builder.Services.AddMudServices();
 builder.Services.ConfigureReverseProxy(builder);
 builder.Services.ConfigureHealthChecks();
 builder.Services.ConfigureApiClients(settings);

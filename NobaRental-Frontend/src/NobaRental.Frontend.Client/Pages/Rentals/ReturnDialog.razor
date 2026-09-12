@@ -1,0 +1,86 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudCard Outlined="true">
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Booking Details</MudText>
+                    <MudText Typo="Typo.body2"><strong>Booking:</strong> #@Booking.BookingNumber</MudText>
+                    <MudText Typo="Typo.body2"><strong>Car:</strong> @Booking.RegistrationNumber (@Booking.Category)</MudText>
+                    <MudText Typo="Typo.body2"><strong>Pickup Station:</strong> @Booking.PickupStationCode</MudText>
+                    <MudText Typo="Typo.body2"><strong>Pickup Time:</strong> @Booking.PickupDateTime.ToString("yyyy-MM-dd HH:mm")</MudText>
+                    <MudText Typo="Typo.body2"><strong>Pickup Meter:</strong> @Booking.PickupMeterReadingKm km</MudText>
+                    <MudText Typo="Typo.body2"><strong>Rates:</strong> @Booking.BaseDayRental.ToString("N2") NOK/day, @Booking.BaseKmPrice.ToString("N2") NOK/km</MudText>
+                </MudCardContent>
+            </MudCard>
+
+            <MudForm @ref="Form" @bind-IsValid="IsValid">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <MudSelect T="string"
+                                   @bind-Value="ReturnStationCode"
+                                   Label="Return Station"
+                                   Required="true"
+                                   RequiredError="Return station is required"
+                                   Variant="Variant.Outlined">
+                            @foreach (var st in Stations)
+                            {
+                                <MudSelectItem Value="@st.Code">@st.Code — @st.Name (@st.City)</MudSelectItem>
+                            }
+                        </MudSelect>
+                        @if (!string.IsNullOrWhiteSpace(ReturnStationCode) && !string.Equals(ReturnStationCode, Booking.PickupStationCode, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true" Class="mt-2">
+                                One-way rental: Vehicle will automatically be relocated to station <strong>@ReturnStationCode</strong>.
+                            </MudAlert>
+                        }
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker @bind-Date="ReturnDate"
+                                       Label="Return Date"
+                                       Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTimePicker @bind-Time="ReturnTime"
+                                       Label="Return Time"
+                                       Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudNumericField @bind-Value="ReturnMeterReadingKm"
+                                         Label="Return Meter Reading (km)"
+                                         Min="@Booking.PickupMeterReadingKm"
+                                         HelperText="@($"Must be at least {Booking.PickupMeterReadingKm} km")"
+                                         Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+
+            @if (EstimatedDays > 0 && EstimatedKm >= 0)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    <MudText Typo="Typo.body2"><strong>Estimated Billed Days:</strong> @EstimatedDays day(s)</MudText>
+                    <MudText Typo="Typo.body2"><strong>Kilometers Driven:</strong> @EstimatedKm km</MudText>
+                    <MudText Typo="Typo.subtitle1" Color="Color.Success">
+                        <strong>Calculated Price:</strong> @EstimatedTotalPrice.ToString("N2") NOK
+                    </MudText>
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Success"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || IsSubmitting)"
+                   OnClick="Submit">
+            @if (IsSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Processing Return...</MudText>
+            }
+            else
+            {
+                <MudText>Confirm Return & Calculate Price</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>

@@ -1,0 +1,83 @@
+@page "/stations"
+
+<div>
+    <MudStack Spacing="4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <div>
+                <MudText Typo="Typo.h4">Station Management</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Manage rental hubs, airport desks, and pickup locations.
+                </MudText>
+            </div>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="LoadStations">
+                    Refresh
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenCreateDialog">
+                    Add Station
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        <MudTable Items="Stations"
+                  Loading="IsLoading"
+                  Hover="true"
+                  Striped="true"
+                  Elevation="1">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Rental Stations</MudText>
+                <MudSpacer />
+                <MudSwitch @bind-Value="IncludeInactive"
+                           Label="Include Inactive"
+                           Color="Color.Primary" />
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Code</MudTh>
+                <MudTh>Station Name</MudTh>
+                <MudTh>City</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh Style="text-align: right">Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Code">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                        @context.Code
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Station Name">
+                    <strong>@context.Name</strong>
+                </MudTd>
+                <MudTd DataLabel="City">@context.City</MudTd>
+                <MudTd DataLabel="Status">
+                    <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Default)" Variant="Variant.Outlined">
+                        @(context.IsActive ? "Active" : "Inactive")
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Actions" Style="text-align: right">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => OpenEditDialog(context))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   OnClick="@(() => DeleteStation(context))" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Class="pa-4" Align="Align.Center" Color="Color.Secondary">
+                    No stations found. Click "Add Station" to create one.
+                </MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText Class="pa-4" Align="Align.Center">Loading stations...</MudText>
+            </LoadingContent>
+        </MudTable>
+    </MudStack>
+</div>

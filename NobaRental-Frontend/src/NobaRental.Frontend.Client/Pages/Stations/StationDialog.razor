@@ -1,0 +1,46 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="Model.Code"
+                               Label="Station Code"
+                               Placeholder="e.g. TRD"
+                               Required="true"
+                               RequiredError="Station code is required"
+                               MaxLength="10"
+                               Disabled="IsEditMode"
+                               HelperText="@(IsEditMode ? "Station code cannot be changed once created." : "Unique 3-10 character code (e.g. OSL, BGO).")" />
+
+                <MudTextField @bind-Value="Model.Name"
+                               Label="Station Name"
+                               Placeholder="e.g. Trondheim Airport Værnes"
+                               Required="true"
+                               RequiredError="Station name is required"
+                               MaxLength="100" />
+
+                <MudTextField @bind-Value="Model.City"
+                               Label="City"
+                               Placeholder="e.g. Trondheim"
+                               Required="true"
+                               RequiredError="City is required"
+                               MaxLength="50" />
+
+                @if (IsEditMode)
+                {
+                    <MudSwitch @bind-Value="Model.IsActive"
+                               Label="Station is Active"
+                               Color="Color.Primary" />
+                }
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   OnClick="Submit"
+                   Disabled="@(!IsValid || IsSubmitting)">
+            @(IsEditMode ? "Save Changes" : "Create Station")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

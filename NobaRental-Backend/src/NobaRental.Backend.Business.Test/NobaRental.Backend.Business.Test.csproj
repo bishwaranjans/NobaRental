@@ -8,12 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" PrivateAssets="all" />
-    <PackageReference Include="Respawn" />
-    <PackageReference Include="Xunit.Combinatorial" />
     <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NobaRental.Backend.Business\NobaRental.Backend.Business.csproj" />
+    <ProjectReference Include="..\NobaRental.Backend.Data\NobaRental.Backend.Data.csproj" />
+    <ProjectReference Include="..\NobaRental.Backend.Domain\NobaRental.Backend.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

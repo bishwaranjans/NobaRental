@@ -1,0 +1,131 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                        Select pickup station and available vehicle. Booking number is automatically generated.
+                    </MudAlert>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string"
+                               Value="SelectedStationCode"
+                               ValueChanged="OnStationChanged"
+                               Label="Pickup Station"
+                               Required="true"
+                               RequiredError="Pickup station is required"
+                               Variant="Variant.Outlined">
+                        @foreach (var st in Stations)
+                        {
+                            <MudSelectItem Value="@st.Code">@st.Code — @st.Name (@st.City)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string"
+                               Value="Model.RegistrationNumber"
+                               ValueChanged="OnCarSelected"
+                               Label="Select Available Car"
+                               Required="true"
+                               RequiredError="Please select a car"
+                               Variant="Variant.Outlined">
+                        @if (AvailableCars.Count == 0)
+                        {
+                            <MudSelectItem Disabled="true" Value="@string.Empty">
+                                No available cars at this station
+                            </MudSelectItem>
+                        }
+                        @foreach (var car in AvailableCars)
+                        {
+                            <MudSelectItem Value="@car.RegistrationNumber">
+                                @car.RegistrationNumber — @GetCategoryName(car.Category) (@car.CurrentMeterReadingKm km)
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudLink Color="Color.Primary"
+                             Typo="Typo.caption"
+                             Underline="Underline.Always"
+                             OnClick="OpenAddCarDialog"
+                             Style="cursor: pointer;"
+                             Class="mt-1 d-inline-block">
+                        Car not in fleet? Register a new vehicle
+                    </MudLink>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="Model.CustomerSsn"
+                                  Label="Customer Social Security Number (SSN)"
+                                  Required="true"
+                                  RequiredError="SSN is required"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Model.Category"
+                               Label="Car Category"
+                               Disabled="@IsCarSelected"
+                               ReadOnly="@IsCarSelected"
+                               HelperText="@(IsCarSelected ? "Category locked to registered vehicle" : null)"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem Value="CarCategoryDto.SmallCar">Small car</MudSelectItem>
+                        <MudSelectItem Value="CarCategoryDto.Combi">Combi</MudSelectItem>
+                        <MudSelectItem Value="CarCategoryDto.Truck">Truck</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="PickupDate"
+                                   Label="Pickup Date"
+                                   Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker @bind-Time="PickupTime"
+                                   Label="Pickup Time"
+                                   Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="Model.PickupMeterReadingKm"
+                                     Label="Current Meter Reading (km)"
+                                     Disabled="@IsCarSelected"
+                                     ReadOnly="@IsCarSelected"
+                                     HelperText="@(IsCarSelected ? "Odometer locked from fleet record" : null)"
+                                     Min="0"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="Model.BaseDayRental"
+                                     Label="Base Day Rental (NOK)"
+                                     Min="0m"
+                                     Format="N2"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="Model.BaseKmPrice"
+                                     Label="Base Km Price (NOK)"
+                                     Min="0m"
+                                     Format="N2"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || IsSubmitting || string.IsNullOrWhiteSpace(Model.RegistrationNumber))"
+                   OnClick="Submit">
+            @if (IsSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Registering...</MudText>
+            }
+            else
+            {
+                <MudText>Register Pickup</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>

@@ -1,6 +1,11 @@
 @NobaRental.Backend_HostAddress = http://localhost:5200
 
-GET {{NobaRental.Backend_HostAddress}}/weatherforecast/
+GET {{NobaRental.Backend_HostAddress}}/api/v1/rentals
+Accept: application/json
+
+###
+
+GET {{NobaRental.Backend_HostAddress}}/api/v1/rentals/active
 Accept: application/json
 
 ###

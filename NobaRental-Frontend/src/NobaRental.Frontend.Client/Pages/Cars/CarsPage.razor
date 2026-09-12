@@ -1,0 +1,137 @@
+@page "/cars"
+
+<div>
+    <MudStack Spacing="4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <div>
+                <MudText Typo="Typo.h4">Fleet Management</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Overview, station distribution, and status of all vehicles in the rental fleet.
+                </MudText>
+            </div>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ReloadTable">
+                    Refresh
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenAddCarDialog">
+                    Register Vehicle
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        <MudTable @ref="Table"
+                  ServerData="ServerReload"
+                  Hover="true"
+                  Bordered="false"
+                  Striped="true"
+                  Elevation="1">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Vehicles</MudText>
+                <MudButtonGroup Class="ml-4" Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary">
+                    <MudButton Variant="@(FilterStatus is null ? Variant.Filled : Variant.Outlined)"
+                               OnClick="@(() => SetStatusFilter(null))">
+                        All
+                    </MudButton>
+                    <MudButton Variant="@(FilterStatus == CarStatusDto.Available ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Success"
+                               OnClick="@(() => SetStatusFilter(CarStatusDto.Available))">
+                        Available
+                    </MudButton>
+                    <MudButton Variant="@(FilterStatus == CarStatusDto.Rented ? Variant.Filled : Variant.Outlined)"
+                               Color="Color.Warning"
+                               OnClick="@(() => SetStatusFilter(CarStatusDto.Rented))">
+                        Rented
+                    </MudButton>
+                </MudButtonGroup>
+
+                <MudSelect T="string"
+                           Value="FilterStation"
+                           ValueChanged="SetStationFilter"
+                           Label="Station"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Dense="true"
+                           Class="ml-4"
+                           Style="max-width: 180px;">
+                    <MudSelectItem Value="@string.Empty">All Stations</MudSelectItem>
+                    @foreach (var st in Stations)
+                    {
+                        <MudSelectItem Value="@st.Code">@st.Code (@st.City)</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudSpacer />
+                <MudTextField @bind-Value="SearchString"
+                               Placeholder="Search plate..."
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.Search"
+                               IconSize="Size.Medium"
+                               Class="mt-0"
+                               Immediate="true"
+                               Clearable="true"
+                               OnClearButtonClick="OnSearchClear"
+                               DebounceInterval="300"
+                               OnDebounceIntervalElapsed="ReloadTable" />
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortLabel="registrationnumber" T="CarResponse">License Plate</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="category" T="CarResponse">Category</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="station" T="CarResponse">Current Station</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="odometer" T="CarResponse">Current Odometer</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="status" T="CarResponse">Status</MudTableSortLabel></MudTh>
+                <MudTh Style="text-align: right">Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="License Plate">
+                    <strong>@context.RegistrationNumber</strong>
+                </MudTd>
+                <MudTd DataLabel="Category">
+                    <MudChip T="string" Size="Size.Small" Color="@GetCategoryColor(context.Category)">
+                        @GetCategoryName(context.Category)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Current Station">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info" Icon="@Icons.Material.Filled.LocationOn">
+                        @context.CurrentStationCode
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Current Odometer">
+                    @context.CurrentMeterReadingKm.ToString("N0") km
+                </MudTd>
+                <MudTd DataLabel="Status">
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">
+                        @context.Status.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Actions" Style="text-align: right">
+                    @if (context.Status != CarStatusDto.Rented)
+                    {
+                        <MudTooltip Text="Decommission vehicle">
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteForever"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DecommissionCar(context))" />
+                        </MudTooltip>
+                    }
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Class="pa-4" Align="Align.Center" Color="Color.Secondary">
+                    No vehicles found. Click "Register Vehicle" to add one to the fleet.
+                </MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText Class="pa-4" Align="Align.Center">Loading fleet data...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 25, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudStack>
+</div>

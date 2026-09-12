@@ -9,6 +9,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\NobaRental-Backend\src\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
   </ItemGroup>
 
 </Project>

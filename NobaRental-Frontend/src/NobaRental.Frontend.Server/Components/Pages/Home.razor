@@ -1,7 +1,37 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Noba Car Rental System</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderAvatar>
+                <MudAvatar Color="Color.Primary" Size="Size.Large">
+                    <MudIcon Icon="@Icons.Material.Filled.DirectionsCar" />
+                </MudAvatar>
+            </CardHeaderAvatar>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5">Noba Car Rental System</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Vehicle pickup, return &amp; pricing management</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudText Typo="Typo.body1" Class="mb-3">
+                Welcome to the Noba Car Rental management system. The system handles car pickup and return registrations, automatic calculation of rental duration, kilometer tracking, and transparent pricing calculation in Norwegian Krone (NOK).
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                Supported Vehicle Categories:
+            </MudText>
+            <MudStack Spacing="2" Class="mb-4">
+                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined">Small car: Price = baseDayRental * days</MudChip>
+                <MudChip T="string" Color="Color.Secondary" Variant="Variant.Outlined">Combi: Price = (baseDayRental * days * 1.3) + (baseKmPrice * km)</MudChip>
+                <MudChip T="string" Color="Color.Tertiary" Variant="Variant.Outlined">Truck: Price = (baseDayRental * days * 1.5) + (baseKmPrice * km * 1.5)</MudChip>
+            </MudStack>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ListAlt" Href="rentals">
+                Open Car Rentals Management
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>

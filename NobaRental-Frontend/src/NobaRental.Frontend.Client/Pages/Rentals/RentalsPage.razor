@@ -1,0 +1,203 @@
+@page "/rentals"
+
+<div>
+    <MudStack Spacing="4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <div>
+                <MudText Typo="Typo.h4">Car Rentals</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Manage vehicle pickups, returns, routes, and automatic pricing in Norwegian Krone (NOK).
+                </MudText>
+            </div>
+            <MudStack Row="true" Spacing="2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ReloadTable">
+                    Refresh
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.DirectionsCar"
+                           OnClick="OpenPickupDialog">
+                    Register Pickup
+                </MudButton>
+            </MudStack>
+        </MudStack>
+
+        <MudTable @ref="Table"
+                  ServerData="ServerReload"
+                  Hover="true"
+                  Bordered="false"
+                  Striped="true"
+                  Elevation="1">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Rentals Overview</MudText>
+                <MudButtonGroup Class="ml-4" Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary">
+                    <MudButton Variant="@(FilterStatus is null ? Variant.Filled : Variant.Outlined)"
+                               OnClick="@(() => SetStatusFilter(null))">
+                        All Rentals
+                    </MudButton>
+                    <MudButton Variant="@(FilterStatus == RentalStatusDto.Active ? Variant.Filled : Variant.Outlined)"
+                               StartIcon="@Icons.Material.Filled.DirectionsCar"
+                               OnClick="@(() => SetStatusFilter(RentalStatusDto.Active))">
+                        Active
+                    </MudButton>
+                    <MudButton Variant="@(FilterStatus == RentalStatusDto.Completed ? Variant.Filled : Variant.Outlined)"
+                               OnClick="@(() => SetStatusFilter(RentalStatusDto.Completed))">
+                        Completed
+                    </MudButton>
+                </MudButtonGroup>
+
+                <MudSelect T="string"
+                           Value="FilterStation"
+                           ValueChanged="SetStationFilter"
+                           Label="Station"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Dense="true"
+                           Class="ml-4"
+                           Style="max-width: 180px;">
+                    <MudSelectItem Value="@string.Empty">All Stations</MudSelectItem>
+                    @foreach (var st in Stations)
+                    {
+                        <MudSelectItem Value="@st.Code">@st.Code (@st.City)</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudSpacer />
+                <MudTextField @bind-Value="SearchString"
+                              Placeholder="Search by booking, plate, SSN..."
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Class="mt-0"
+                              Immediate="true"
+                              Clearable="true"
+                              OnClearButtonClick="OnSearchClear"
+                              DebounceInterval="300"
+                              OnDebounceIntervalElapsed="ReloadTable" />
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortLabel="bookingnumber" T="RentalBookingResponse">Booking #</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="car" T="RentalBookingResponse">Car Reg</MudTableSortLabel></MudTh>
+                <MudTh>Category</MudTh>
+                <MudTh>Route</MudTh>
+                <MudTh>Customer SSN</MudTh>
+                <MudTh><MudTableSortLabel SortLabel="pickupdate" T="RentalBookingResponse">Pickup</MudTableSortLabel></MudTh>
+                <MudTh>Return</MudTh>
+                <MudTh>Days / Km</MudTh>
+                <MudTh><MudTableSortLabel SortLabel="status" T="RentalBookingResponse">Status</MudTableSortLabel></MudTh>
+                <MudTh Style="text-align: right;"><MudTableSortLabel SortLabel="totalprice" T="RentalBookingResponse">Total (NOK)</MudTableSortLabel></MudTh>
+                <MudTh Style="text-align: center;">Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Booking #">
+                    <strong>#@context.BookingNumber</strong>
+                </MudTd>
+                <MudTd DataLabel="Car Reg">@context.RegistrationNumber</MudTd>
+                <MudTd DataLabel="Category">
+                    <MudChip T="string" Size="Size.Small" Color="@GetCategoryColor(context.Category)">
+                        @GetCategoryName(context.Category)
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Route">
+                    @if (!string.IsNullOrWhiteSpace(context.ReturnStationCode) && !string.Equals(context.ReturnStationCode, context.PickupStationCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                            @context.PickupStationCode ➔ @context.ReturnStationCode
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">
+                            @context.PickupStationCode
+                        </MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Customer SSN">@context.CustomerSsn</MudTd>
+                <MudTd DataLabel="Pickup">
+                    <MudText Typo="Typo.body2">@context.PickupDateTime.ToString("yyyy-MM-dd HH:mm")</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PickupMeterReadingKm km</MudText>
+                </MudTd>
+                <MudTd DataLabel="Return">
+                    @if (context.ReturnDateTime.HasValue)
+                    {
+                        <MudText Typo="Typo.body2">@context.ReturnDateTime.Value.ToString("yyyy-MM-dd HH:mm")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ReturnMeterReadingKm km</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">—</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Days / Km">
+                    @if (context.CalculatedDays.HasValue)
+                    {
+                        <MudText Typo="Typo.body2">@context.CalculatedDays day(s)</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CalculatedKm km driven</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Ongoing</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Status">
+                    @if (context.Status == RentalStatusDto.Active)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Active</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Completed</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Total (NOK)" Style="text-align: right;">
+                    @if (context.TotalPrice.HasValue)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Success">
+                            <strong>@context.TotalPrice.Value.ToString("N2") NOK</strong>
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Pending return</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Actions" Style="text-align: center;">
+                    @if (context.Status == RentalStatusDto.Active)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.AssignmentTurnedIn"
+                                   OnClick="@(() => OpenReturnDialog(context))">
+                            Return
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Info"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Receipt"
+                                   OnClick="@(() => OpenReceiptDialog(context))">
+                            Receipt
+                        </MudButton>
+                    }
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Class="pa-4" Align="Align.Center" Color="Color.Secondary">
+                    No car rental records found. Click "Register Pickup" to create one.
+                </MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText Class="pa-4" Align="Align.Center">Loading rentals data...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 25, 50 }" />
+            </PagerContent>
+        </MudTable>
+    </MudStack>
+</div>

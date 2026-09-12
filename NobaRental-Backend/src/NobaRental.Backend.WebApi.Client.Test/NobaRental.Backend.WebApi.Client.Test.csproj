@@ -12,11 +12,11 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" PrivateAssets="all" />
-    <PackageReference Include="Xunit.Combinatorial" />
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NobaRental.Backend.Domain\NobaRental.Backend.Domain.csproj" />
     <ProjectReference Include="..\NobaRental.Backend.WebApi\NobaRental.Backend.WebApi.csproj" />
     <ProjectReference Include="..\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
   </ItemGroup>

@@ -68,6 +68,9 @@ dotnet_diagnostic.Proj0451.severity = none
 # Proj0452: Include Microsoft.NET.Test.Sdk
 dotnet_diagnostic.Proj0452.severity = none
 
+# Proj0503: Accept third-party licenses
+dotnet_diagnostic.Proj0503.severity = none
+
 # Proj1001: Use the xunit.analyzers package
 dotnet_diagnostic.Proj1001.severity = none
 

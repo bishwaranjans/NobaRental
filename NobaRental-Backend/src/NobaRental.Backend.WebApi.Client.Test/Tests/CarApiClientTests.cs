@@ -1,0 +1,149 @@
+using NobaRental.Backend.Domain;
+using NobaRental.Backend.Domain.Models;
+using NobaRental.Backend.Domain.Values;
+using NobaRental.Backend.WebApi.Client.Models.Request;
+using NobaRental.Backend.WebApi.Client.Test.Helpers;
+using NSubstitute;
+using RestEase;
+using DtoCarCategory = NobaRental.Backend.WebApi.Client.Models.Values.CarCategoryDto;
+using DtoCarStatus = NobaRental.Backend.WebApi.Client.Models.Values.CarStatusDto;
+
+namespace NobaRental.Backend.WebApi.Client.Test.Tests;
+
+public sealed class CarApiClientTests : TestWebHost
+{
+    private ICarApiClient Client => RestClient.For<ICarApiClient>(GetClient());
+
+    [Fact]
+    public async Task RegisterCar_Success()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL");
+
+        api.RegisterCar("EV12345", CarCategory.SmallCar, 1500, "OSL", Arg.Any<CancellationToken>())
+           .Returns(domainCar);
+
+        ReplaceService(api);
+
+        var request = new RegisterCarRequest("EV12345", DtoCarCategory.SmallCar, 1500, "OSL");
+
+        // Act
+        using var result = await Client.RegisterCar(request, Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        var content = result.GetContent();
+        Assert.NotNull(content);
+        Assert.Equal("EV12345", content.RegistrationNumber);
+        Assert.Equal(DtoCarCategory.SmallCar, content.Category);
+        Assert.Equal(1500, content.CurrentMeterReadingKm);
+        Assert.Equal(DtoCarStatus.Available, content.Status);
+        Assert.Equal("OSL", content.CurrentStationCode);
+    }
+
+    [Fact]
+    public async Task GetCars_Success()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        var domainCars = new List<Car>
+        {
+            new("EV12345", CarCategory.SmallCar, 1000, CarStatus.Available, "OSL"),
+            new("BT20001", CarCategory.Combi, 5000, CarStatus.Rented, "BGO"),
+        };
+        var pagedResult = new PagedResult<Car>(domainCars, 2, 1, 10);
+
+        api.GetCars(1, 10, null, null, null, null, false, Arg.Any<CancellationToken>())
+           .Returns(pagedResult);
+        ReplaceService(api);
+
+        // Act
+        using var result = await Client.GetCars(1, 10, cancellationToken: Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        var content = result.GetContent();
+        Assert.NotNull(content);
+        Assert.Equal(2, content.TotalCount);
+        Assert.Equal(2, content.Items.Count);
+    }
+
+    [Fact]
+    public async Task GetAvailableCars_Success()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        var domainCars = new List<Car>
+        {
+            new("EV12345", CarCategory.SmallCar, 1000, CarStatus.Available, "OSL"),
+        };
+
+        api.GetAvailableCars("OSL", CarCategory.SmallCar, Arg.Any<CancellationToken>()).Returns(domainCars);
+        ReplaceService(api);
+
+        // Act
+        using var result = await Client.GetAvailableCars("OSL", DtoCarCategory.SmallCar, Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        var content = result.GetContent();
+        Assert.NotNull(content);
+        var item = Assert.Single(content);
+        Assert.Equal("EV12345", item.RegistrationNumber);
+        Assert.Equal(DtoCarStatus.Available, item.Status);
+        Assert.Equal("OSL", item.CurrentStationCode);
+    }
+
+    [Fact]
+    public async Task GetCarByRegistrationNumber_Success()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        var domainCar = new Car("BT20001", CarCategory.Combi, 5000, CarStatus.Available, "SVG");
+
+        api.GetCarByRegistrationNumber("BT20001", Arg.Any<CancellationToken>()).Returns(domainCar);
+        ReplaceService(api);
+
+        // Act
+        using var result = await Client.GetCarByRegistrationNumber("BT20001", Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        var content = result.GetContent();
+        Assert.NotNull(content);
+        Assert.Equal("BT20001", content.RegistrationNumber);
+        Assert.Equal(DtoCarCategory.Combi, content.Category);
+        Assert.Equal("SVG", content.CurrentStationCode);
+    }
+
+    [Fact]
+    public async Task GetCarByRegistrationNumber_NotFound()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        api.GetCarByRegistrationNumber("UNKNOWN", Arg.Any<CancellationToken>()).Returns((Car?)null);
+        ReplaceService(api);
+
+        // Act
+        using var result = await Client.GetCarByRegistrationNumber("UNKNOWN", Token);
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, result.ResponseMessage.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteCar_Success()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        api.DeleteCar("EV12345", Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        ReplaceService(api);
+
+        // Act
+        using var result = await Client.DeleteCar("EV12345", Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+    }
+}
