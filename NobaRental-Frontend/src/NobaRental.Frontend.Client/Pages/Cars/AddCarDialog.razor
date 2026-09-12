@@ -1,0 +1,65 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                        Add a new vehicle to the rental fleet. The category and initial station are assigned on registration.
+                    </MudAlert>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="RegistrationNumber"
+                                  Label="Registration Number (License Plate)"
+                                  Required="true"
+                                  RequiredError="Registration number is required"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="Category"
+                               Label="Vehicle Category"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem Value="CarCategoryDto.SmallCar">Small car</MudSelectItem>
+                        <MudSelectItem Value="CarCategoryDto.Combi">Combi</MudSelectItem>
+                        <MudSelectItem Value="CarCategoryDto.Truck">Truck</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect @bind-Value="StationCode"
+                               Label="Assigned Station"
+                               Required="true"
+                               RequiredError="Station is required"
+                               Variant="Variant.Outlined">
+                        @foreach (var st in Stations)
+                        {
+                            <MudSelectItem Value="@st.Code">@st.Code - @st.Name (@st.City)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="InitialMeterReadingKm"
+                                     Label="Starting Meter Reading (km)"
+                                     Min="0"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || IsSubmitting)"
+                   OnClick="Submit">
+            @if (IsSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Registering...</MudText>
+            }
+            else
+            {
+                <MudText>Register Vehicle</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>

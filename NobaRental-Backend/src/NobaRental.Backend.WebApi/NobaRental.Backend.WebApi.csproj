@@ -8,6 +8,7 @@
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" />
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.Extensions.Azure" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
@@ -19,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\NobaRental-Shared\NobaRental.Shared.ServiceDefaults\NobaRental.Shared.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\NobaRental.Backend.Business\NobaRental.Backend.Business.csproj" />
     <ProjectReference Include="..\NobaRental.Backend.Data\NobaRental.Backend.Data.csproj" />
     <ProjectReference Include="..\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
   </ItemGroup>

@@ -10,6 +10,7 @@
 	<Project Path="NobaRental.Backend.Domain/NobaRental.Backend.Domain.csproj" />
   </Folder>
   <Folder Name="/3. Data/">
+    <Project Path="NobaRental.Backend.Data.MigrationStartup/NobaRental.Backend.Data.MigrationStartup.csproj" />
     <Project Path="NobaRental.Backend.Data.Test/NobaRental.Backend.Data.Test.csproj" />
     <Project Path="NobaRental.Backend.Data/NobaRental.Backend.Data.csproj" />
   </Folder>

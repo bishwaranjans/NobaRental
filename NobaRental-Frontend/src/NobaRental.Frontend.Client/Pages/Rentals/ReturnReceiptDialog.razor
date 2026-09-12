@@ -1,0 +1,58 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudAlert Severity="Severity.Success" Variant="Variant.Filled">
+                <MudText Typo="Typo.h6">Rental Successfully Completed</MudText>
+            </MudAlert>
+
+            <MudCard Outlined="true">
+                <MudCardContent>
+                    <MudText Typo="Typo.subtitle1" Color="Color.Primary">Invoice Breakdown (@Booking.Currency)</MudText>
+                    <MudDivider Class="my-2" />
+
+                    <MudGrid>
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Booking Number:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right"><strong>@Booking.BookingNumber</strong></MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Vehicle Reg Number:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.RegistrationNumber</MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Category:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.Category</MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Customer SSN:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.CustomerSsn</MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Billed Period:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.CalculatedDays day(s)</MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Distance Driven:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.CalculatedKm km</MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Base Day Rate:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.BaseDayRental.ToString("N2") NOK/day</MudText></MudItem>
+
+                        <MudItem xs="6"><MudText Typo="Typo.body2">Base Km Rate:</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.BaseKmPrice.ToString("N2") NOK/km</MudText></MudItem>
+                    </MudGrid>
+
+                    <MudDivider Class="my-3" />
+
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.h6" Color="Color.Success">Total Price:</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.h5" Color="Color.Success" Align="Align.Right">
+                                <strong>@Booking.TotalPrice?.ToString("N2") NOK</strong>
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>

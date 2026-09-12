@@ -3,7 +3,7 @@ using System.Net;
 
 namespace NobaRental.Backend.WebApi.Client.HealthCheck;
 
-public class NobaRentalHealthCheck(IWeatherForecastClient client) : IHealthCheck
+public class NobaRentalHealthCheck(IRentalBookingApiClient client) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken token = default)
     {
