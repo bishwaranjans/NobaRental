@@ -1,7 +1,16 @@
 <Solution>
   <Folder Name="/1. Web API/">
-    <Project Path="NobaRental.Backend.Data/NobaRental.Backend.Data.csproj" />
     <Project Path="NobaRental.Backend.WebApi/NobaRental.Backend.WebApi.csproj" />
+    <Project Path="NobaRental.Backend.WebApi.Client.Test/NobaRental.Backend.WebApi.Client.Test.csproj" />
 	<Project Path="NobaRental.Backend.WebApi.Client/NobaRental.Backend.WebApi.Client.csproj" />
-  </Folder>  
+  </Folder> 
+  <Folder Name="/2. Business/">
+    <Project Path="NobaRental.Backend.Business.Test/NobaRental.Backend.Business.Test.csproj" />
+    <Project Path="NobaRental.Backend.Business/NobaRental.Backend.Business.csproj" />
+	<Project Path="NobaRental.Backend.Domain/NobaRental.Backend.Domain.csproj" />
+  </Folder>
+  <Folder Name="/3. Data/">
+    <Project Path="NobaRental.Backend.Data.Test/NobaRental.Backend.Data.Test.csproj" />
+    <Project Path="NobaRental.Backend.Data/NobaRental.Backend.Data.csproj" />
+  </Folder>
 </Solution>
