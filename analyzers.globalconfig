@@ -65,6 +65,9 @@ dotnet_diagnostic.Proj0400.severity = none
 # Proj0451: Set IsPublishable to false for test projects
 dotnet_diagnostic.Proj0451.severity = none
 
+# Proj0452: Include Microsoft.NET.Test.Sdk
+dotnet_diagnostic.Proj0452.severity = none
+
 # Proj1001: Use the xunit.analyzers package
 dotnet_diagnostic.Proj1001.severity = none
 
