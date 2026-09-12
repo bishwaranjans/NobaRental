@@ -19,8 +19,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\NobaRental-Shared\NobaRental.Shared.ServiceDefaults\NobaRental.Shared.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\..\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
     <ProjectReference Include="..\NobaRental.Backend.Data\NobaRental.Backend.Data.csproj" />
+    <ProjectReference Include="..\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
   </ItemGroup>
 
 </Project>

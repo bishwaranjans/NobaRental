@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\NobaRental-Backend\src\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
     <ProjectReference Include="..\..\..\NobaRental-Shared\NobaRental.Shared.ServiceDefaults\NobaRental.Shared.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\..\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
     <ProjectReference Include="..\NobaRental.Frontend.Client\NobaRental.Frontend.Client.csproj" />
   </ItemGroup>
 

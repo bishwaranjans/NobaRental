@@ -1,12 +1,4 @@
-<Solution>
-  <Folder Name="/1. Solution assets/">
-    <File Path=".editorconfig" />
-    <File Path="analyzers.globalconfig" />
-    <File Path="BannedSymbols.txt" />
-    <File Path="Directory.Build.props" />
-    <File Path="Directory.Packages.props" />
-  </Folder>
-  
+<Solution>  
   <Project Path="NobaRental.Frontend.Client/NobaRental.Frontend.Client.csproj" />
   <Project Path="NobaRental.Frontend.Server/NobaRental.Frontend.Server.csproj" />
 </Solution>
