@@ -1,4 +1,5 @@
 using NobaRental.Backend.Domain;
+using NobaRental.Backend.Domain.Exceptions;
 using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.Domain.Values;
 using NobaRental.Backend.WebApi.Client.Models.Request;
@@ -51,7 +52,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         var pickupTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
         var domainBooking = CreateDomainBooking(101L, "EV12345", "12345678901", CarCategory.SmallCar, "OSL", pickupTime, 10000);
 
-        api.RegisterPickup("EV12345", "12345678901", CarCategory.SmallCar, "OSL", Arg.Any<DateTimeOffset>(), 10000, 500m, 2m, Arg.Any<CancellationToken>())
+        api.RegisterPickup("EV12345", "12345678901", CarCategory.SmallCar, "OSL", Arg.Any<DateTimeOffset>(), 10000, Arg.Any<CancellationToken>())
            .Returns(domainBooking);
 
         ReplaceService(api);
@@ -62,9 +63,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             Category: DtoCarCategory.SmallCar,
             PickupStationCode: "OSL",
             PickupDateTime: pickupTime,
-            PickupMeterReadingKm: 10000,
-            BaseDayRental: 500m,
-            BaseKmPrice: 2m);
+            PickupMeterReadingKm: 10000);
 
         // Act
         using var result = await Client.RegisterPickup(request, Token);
@@ -83,12 +82,13 @@ public sealed class RentalBookingApiClientTests : TestWebHost
     }
 
     [Fact]
-    public async Task RegisterReturn_Success()
+    public async Task ReturnBooking_Success_WithETagAndIfMatch()
     {
         // Arrange
         var api = Substitute.For<IRentalBookingApi>();
         var pickupTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(2);
+        byte[] rowVersion = [1, 2, 3, 4];
 
         var domainBooking = new RentalBooking(
             BookingNumber: 101L,
@@ -102,29 +102,33 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             ReturnDateTime: returnTime,
             ReturnMeterReadingKm: 10350,
             BaseDayRental: 500m,
-            BaseKmPrice: 2m,
+            BaseKmPrice: 0m,
             CalculatedDays: 2,
             CalculatedKm: 350,
             TotalPrice: 1000m,
             Currency: "NOK",
-            Status: RentalStatus.Completed);
+            Status: RentalStatus.Completed,
+            RowVersion: rowVersion);
 
         api.RegisterReturn(101L, "BGO", Arg.Any<DateTimeOffset>(), 10350, Arg.Any<byte[]?>(), Arg.Any<CancellationToken>())
            .Returns(domainBooking);
 
         ReplaceService(api);
 
-        var request = new RegisterReturnRequest(
-            BookingNumber: 101L,
+        var request = new ReturnRentalRequest(
             ReturnStationCode: "BGO",
             ReturnDateTime: returnTime,
             ReturnMeterReadingKm: 10350);
 
+        var ifMatch = $"\"{Convert.ToBase64String(rowVersion)}\"";
+
         // Act
-        using var result = await Client.RegisterReturn(request, Token);
+        using var result = await Client.ReturnBooking(101L, request, ifMatch, Token);
 
         // Assert
         Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        Assert.NotNull(result.ResponseMessage.Headers.ETag);
+        Assert.Equal(ifMatch, result.ResponseMessage.Headers.ETag.ToString());
         var content = result.GetContent();
         Assert.NotNull(content);
         Assert.Equal(101L, content.BookingNumber);
@@ -133,6 +137,72 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         Assert.Equal(1000m, content.TotalPrice);
         Assert.Equal(2, content.CalculatedDays);
         Assert.Equal(350, content.CalculatedKm);
+    }
+
+    [Fact]
+    public async Task ReturnBooking_ConcurrencyConflict_WithIfMatch_ReturnsPreconditionFailed()
+    {
+        // Arrange
+        var api = Substitute.For<IRentalBookingApi>();
+        var returnTime = new DateTimeOffset(2026, 9, 14, 10, 0, 0, TimeSpan.Zero);
+        byte[] rowVersion = [9, 9, 9, 9];
+
+        api.RegisterReturn(101L, "BGO", Arg.Any<DateTimeOffset>(), 10350, Arg.Any<byte[]?>(), Arg.Any<CancellationToken>())
+           .Returns<RentalBooking>(_ => throw new RentalConcurrencyException("Concurrency conflict"));
+
+        ReplaceService(api);
+
+        var request = new ReturnRentalRequest(
+            ReturnStationCode: "BGO",
+            ReturnDateTime: returnTime,
+            ReturnMeterReadingKm: 10350);
+
+        var ifMatch = $"\"{Convert.ToBase64String(rowVersion)}\"";
+
+        // Act
+        using var result = await Client.ReturnBooking(101L, request, ifMatch, Token);
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.PreconditionFailed, result.ResponseMessage.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetBookingByNumber_WithIfNoneMatch_Returns304NotModified()
+    {
+        // Arrange
+        var api = Substitute.For<IRentalBookingApi>();
+        byte[] rowVersion = [5, 6, 7, 8];
+        var domainBooking = new RentalBooking(
+            BookingNumber: 202L,
+            RegistrationNumber: "BT99999",
+            CustomerSsn: "98765432100",
+            Category: CarCategory.Combi,
+            PickupStationCode: "OSL",
+            PickupDateTime: new DateTimeOffset(2026, 9, 10, 8, 0, 0, TimeSpan.Zero),
+            PickupMeterReadingKm: 50000,
+            ReturnStationCode: null,
+            ReturnDateTime: null,
+            ReturnMeterReadingKm: null,
+            BaseDayRental: 600m,
+            BaseKmPrice: 3m,
+            CalculatedDays: null,
+            CalculatedKm: null,
+            TotalPrice: null,
+            Currency: "NOK",
+            Status: RentalStatus.Active,
+            RowVersion: rowVersion);
+
+        api.GetBookingByNumber(202L, Arg.Any<CancellationToken>()).Returns(domainBooking);
+        ReplaceService(api);
+
+        using var client = GetClient();
+        client.DefaultRequestHeaders.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue($"\"{Convert.ToBase64String(rowVersion)}\""));
+
+        // Act
+        using var response = await client.GetAsync("/api/v1/rentals/202", Token);
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.NotModified, response.StatusCode);
     }
 
     [Fact]

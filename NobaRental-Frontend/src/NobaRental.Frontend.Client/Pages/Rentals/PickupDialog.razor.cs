@@ -29,6 +29,9 @@ public partial class PickupDialog(
     protected string SelectedStationCode { get; set; } = string.Empty;
     protected List<CarResponse> AvailableCars { get; set; } = [];
 
+    protected decimal SelectedCarDayRental { get; set; }
+    protected decimal SelectedCarKmPrice { get; set; }
+
     protected DateTime? PickupDate;
     protected TimeSpan? PickupTime;
 
@@ -38,8 +41,6 @@ public partial class PickupDialog(
         CustomerSsn = string.Empty,
         Category = CarCategoryDto.SmallCar,
         PickupMeterReadingKm = 0,
-        BaseDayRental = 500m,
-        BaseKmPrice = 10m,
     };
 
     protected override async Task OnInitializedAsync()
@@ -103,10 +104,14 @@ public partial class PickupDialog(
         {
             Model.Category = car.Category;
             Model.PickupMeterReadingKm = car.CurrentMeterReadingKm;
+            SelectedCarDayRental = car.BaseDayRental;
+            SelectedCarKmPrice = car.BaseKmPrice;
             IsCarSelected = true;
         }
         else
         {
+            SelectedCarDayRental = 0m;
+            SelectedCarKmPrice = 0m;
             IsCarSelected = false;
         }
     }
@@ -171,8 +176,6 @@ public partial class PickupDialog(
                 PickupStationCode: SelectedStationCode,
                 PickupDateTime: pickupDateTime,
                 PickupMeterReadingKm: Model.PickupMeterReadingKm,
-                BaseDayRental: Model.BaseDayRental,
-                BaseKmPrice: Model.BaseKmPrice,
                 Currency: "NOK");
 
             using var response = await apiClient.RegisterPickup(request);
@@ -207,9 +210,5 @@ public partial class PickupDialog(
         public CarCategoryDto Category { get; set; }
 
         public long PickupMeterReadingKm { get; set; }
-
-        public decimal BaseDayRental { get; set; }
-
-        public decimal BaseKmPrice { get; set; }
     }
 }

@@ -17,14 +17,15 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         CarCategory category,
         long initialMeterReadingKm,
         string stationCode,
+        decimal baseDayRental,
+        decimal baseKmPrice = 0m,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(registrationNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(stationCode);
+        ValidateRegisterArguments(registrationNumber, stationCode, baseDayRental, baseKmPrice, initialMeterReadingKm);
 
-        if (initialMeterReadingKm < 0)
+        if (category == CarCategory.SmallCar)
         {
-            throw new ArgumentOutOfRangeException(nameof(initialMeterReadingKm), "Initial meter reading cannot be negative.");
+            baseKmPrice = 0m;
         }
 
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
@@ -46,26 +47,50 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         {
             if (existing.IsDeleted)
             {
-                existing.IsDeleted = false;
-                existing.DeletedAt = null;
-                existing.Category = category.ToEntity();
-                existing.CurrentMeterReadingKm = initialMeterReadingKm;
-                existing.CurrentStationCode = normalizedStation;
-                existing.Status = CarStatusValue.Available;
-
+                ResurrectDeletedCar(existing, category, initialMeterReadingKm, normalizedStation, baseDayRental, baseKmPrice);
                 await dbContext.SaveChangesAsync(cancellationToken);
-
                 return existing.Map();
             }
 
             throw new InvalidRentalOperationException($"Car with registration number '{normalizedReg}' already exists.");
         }
 
-        var entity = CarMap.MapToEntity(normalizedReg, category, initialMeterReadingKm, normalizedStation, status: CarStatus.Available);
+        var entity = CarMap.MapToEntity(
+            normalizedReg,
+            category,
+            initialMeterReadingKm,
+            normalizedStation,
+            baseDayRental,
+            baseKmPrice,
+            status: CarStatus.Available);
         await dbContext.Cars.AddAsync(entity, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return entity.Map();
+    }
+
+    private static void ValidateRegisterArguments(string reg, string station, decimal dayPrice, decimal kmPrice, long meter)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reg);
+        ArgumentException.ThrowIfNullOrWhiteSpace(station);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(dayPrice);
+        ArgumentOutOfRangeException.ThrowIfNegative(kmPrice);
+        if (meter < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(meter), "Initial meter reading cannot be negative.");
+        }
+    }
+
+    private static void ResurrectDeletedCar(CarEntity existing, CarCategory category, long meter, string station, decimal dayPrice, decimal kmPrice)
+    {
+        existing.IsDeleted = false;
+        existing.DeletedAt = null;
+        existing.Category = category.ToEntity();
+        existing.CurrentMeterReadingKm = meter;
+        existing.CurrentStationCode = station;
+        existing.BaseDayRental = dayPrice;
+        existing.BaseKmPrice = kmPrice;
+        existing.Status = CarStatusValue.Available;
     }
 
     public async Task DeleteCar(string registrationNumber, CancellationToken cancellationToken = default)

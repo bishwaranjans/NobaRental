@@ -6,4 +6,6 @@ public sealed record RegisterCarRequest(
     string RegistrationNumber,
     CarCategoryDto Category,
     long InitialMeterReadingKm,
-    string StationCode);
+    string StationCode,
+    decimal BaseDayRental,
+    decimal BaseKmPrice = 0m);

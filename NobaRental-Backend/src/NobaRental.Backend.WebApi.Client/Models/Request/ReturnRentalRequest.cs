@@ -1,7 +1,6 @@
 namespace NobaRental.Backend.WebApi.Client.Models.Request;
 
-public sealed record RegisterReturnRequest(
-    long BookingNumber,
+public sealed record ReturnRentalRequest(
     string ReturnStationCode,
     DateTimeOffset ReturnDateTime,
     long ReturnMeterReadingKm,

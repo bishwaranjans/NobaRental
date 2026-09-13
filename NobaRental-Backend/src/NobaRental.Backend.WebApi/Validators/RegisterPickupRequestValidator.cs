@@ -21,11 +21,5 @@ public class RegisterPickupRequestValidator : AbstractValidator<RegisterPickupRe
 
         RuleFor(x => x.PickupMeterReadingKm)
             .GreaterThanOrEqualTo(0);
-
-        RuleFor(x => x.BaseDayRental)
-            .GreaterThanOrEqualTo(0);
-
-        RuleFor(x => x.BaseKmPrice)
-            .GreaterThanOrEqualTo(0);
     }
 }

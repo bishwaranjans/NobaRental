@@ -124,19 +124,26 @@ public partial class ReturnDialog(
 
         try
         {
-            var request = new RegisterReturnRequest(
-                BookingNumber: Booking.BookingNumber,
+            var ifMatch = Booking.RowVersion is { Length: > 0 }
+                ? $"\"{Convert.ToBase64String(Booking.RowVersion)}\""
+                : null;
+
+            var request = new ReturnRentalRequest(
                 ReturnStationCode: ReturnStationCode,
                 ReturnDateTime: GetReturnDateTime(),
                 ReturnMeterReadingKm: ReturnMeterReadingKm,
                 RowVersion: Booking.RowVersion);
 
-            using var response = await apiClient.RegisterReturn(request);
+            using var response = await apiClient.ReturnBooking(Booking.BookingNumber, request, ifMatch);
 
             if (response.ResponseMessage.IsSuccessStatusCode && response.GetContent() is { } content)
             {
                 snackbar.AddSuccess($"Return registered! Total price: {content.TotalPrice:N2} NOK");
                 MudDialog.Close(DialogResult.Ok(content));
+            }
+            else if (response.ResponseMessage.StatusCode is System.Net.HttpStatusCode.PreconditionFailed or System.Net.HttpStatusCode.Conflict)
+            {
+                snackbar.AddError("This rental booking was modified by another operation or has already been returned. Please refresh.");
             }
             else
             {

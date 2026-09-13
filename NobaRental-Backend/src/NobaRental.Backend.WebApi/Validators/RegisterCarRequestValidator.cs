@@ -17,5 +17,18 @@ public class RegisterCarRequestValidator : AbstractValidator<RegisterCarRequest>
         RuleFor(x => x.StationCode)
             .NotEmpty()
             .MaximumLength(10);
+
+        RuleFor(x => x.BaseDayRental)
+            .GreaterThan(0)
+            .WithMessage("Base day rental must be greater than 0.");
+
+        RuleFor(x => x.BaseKmPrice)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Base km price cannot be negative.");
+
+        RuleFor(x => x.BaseKmPrice)
+            .Equal(0)
+            .When(x => x.Category == Client.Models.Values.CarCategoryDto.SmallCar)
+            .WithMessage("Base km price must be 0 for small cars.");
     }
 }

@@ -11,9 +11,13 @@ public interface IRentalBookingApiClient
     [AllowAnyStatusCode]
     Task<Response<RentalBookingResponse>> RegisterPickup([Body] RegisterPickupRequest request, CancellationToken cancellationToken = default);
 
-    [Post("api/v1/rentals/return")]
+    [Post("api/v1/rentals/{bookingNumber}/return")]
     [AllowAnyStatusCode]
-    Task<Response<RentalBookingResponse>> RegisterReturn([Body] RegisterReturnRequest request, CancellationToken cancellationToken = default);
+    Task<Response<RentalBookingResponse>> ReturnBooking(
+        [Path] long bookingNumber,
+        [Body] ReturnRentalRequest request,
+        [Header("If-Match")] string? ifMatch = null,
+        CancellationToken cancellationToken = default);
 
     [Get("api/v1/rentals/{bookingNumber}")]
     [AllowAnyStatusCode]

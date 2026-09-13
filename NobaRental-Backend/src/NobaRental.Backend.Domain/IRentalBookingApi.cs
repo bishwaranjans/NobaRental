@@ -12,8 +12,6 @@ public interface IRentalBookingApi
         string pickupStationCode,
         DateTimeOffset pickupDateTime,
         long pickupMeterReadingKm,
-        decimal baseDayRental,
-        decimal baseKmPrice,
         CancellationToken cancellationToken = default);
 
     Task<RentalBooking> RegisterReturn(

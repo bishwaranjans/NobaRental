@@ -19,5 +19,9 @@ public class CarEntity : SoftDeletableEntity
 
     public byte[] RowVersion { get; set; } = [];
 
+    public decimal BaseDayRental { get; set; }
+
+    public decimal BaseKmPrice { get; set; }
+
     public ICollection<RentalBookingEntity> Bookings { get; set; } = [];
 }

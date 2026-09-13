@@ -8,5 +8,7 @@ public sealed record Car(
     long CurrentMeterReadingKm,
     CarStatus Status,
     string CurrentStationCode,
+    decimal BaseDayRental = 0m,
+    decimal BaseKmPrice = 0m,
     bool IsDeleted = false,
     byte[]? RowVersion = null);

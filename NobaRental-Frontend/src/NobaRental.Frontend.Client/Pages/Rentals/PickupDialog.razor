@@ -85,7 +85,7 @@
                                    Variant="Variant.Outlined" />
                 </MudItem>
 
-                <MudItem xs="12" sm="4">
+                <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="Model.PickupMeterReadingKm"
                                      Label="Current Meter Reading (km)"
                                      Disabled="@IsCarSelected"
@@ -94,19 +94,21 @@
                                      Min="0"
                                      Variant="Variant.Outlined" />
                 </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField @bind-Value="Model.BaseDayRental"
-                                     Label="Base Day Rental (NOK)"
-                                     Min="0m"
-                                     Format="N2"
-                                     Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField @bind-Value="Model.BaseKmPrice"
-                                     Label="Base Km Price (NOK)"
-                                     Min="0m"
-                                     Format="N2"
-                                     Variant="Variant.Outlined" />
+                <MudItem xs="12" sm="6">
+                    <MudPaper Outlined="true" Class="pa-3 d-flex flex-column justify-center" Style="height: 100%; min-height: 56px;">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Assigned Vehicle Tariff</MudText>
+                        <MudText Typo="Typo.body2">
+                            <strong>@SelectedCarDayRental.ToString("N2") NOK</strong> / day
+                            @if (Model.Category == CarCategoryDto.SmallCar)
+                            {
+                                <span class="text-muted ml-2">(0.00 NOK/km incl.)</span>
+                            }
+                            else
+                            {
+                                <span class="ml-2">+ <strong>@SelectedCarKmPrice.ToString("N2") NOK</strong> / km</span>
+                            }
+                        </MudText>
+                    </MudPaper>
                 </MudItem>
             </MudGrid>
         </MudForm>

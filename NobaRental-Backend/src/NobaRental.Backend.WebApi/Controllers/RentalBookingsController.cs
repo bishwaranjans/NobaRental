@@ -2,11 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NobaRental.Backend.Domain;
 using NobaRental.Backend.Domain.Exceptions;
+using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.WebApi.Auth;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Client.Models.Values;
 using NobaRental.Backend.WebApi.Mapping;
+
+using NobaRental.Backend.WebApi.Helpers;
 
 namespace NobaRental.Backend.WebApi.Controllers;
 
@@ -28,35 +31,51 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
             pickupStationCode: request.PickupStationCode,
             pickupDateTime: request.PickupDateTime,
             pickupMeterReadingKm: request.PickupMeterReadingKm,
-            baseDayRental: request.BaseDayRental,
-            baseKmPrice: request.BaseKmPrice,
             cancellationToken: cancellationToken);
 
+        ETagHelper.SetETag(Response, result.RowVersion);
         return CreatedAtAction(nameof(GetByBookingNumber), new { bookingNumber = result.BookingNumber }, result.MapToResponse());
     }
 
-    [HttpPost("return")]
+    [HttpPost("{bookingNumber:long}/return")]
     [Authorize(Policy = AuthConstants.Policies.RentalsReturn)]
     [ProducesResponseType<RentalBookingResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> RegisterReturn([FromBody] RegisterReturnRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    public async Task<IActionResult> ReturnBooking(
+        long bookingNumber,
+        [FromBody] ReturnRentalRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
     {
-        var result = await rentalBookingApi.RegisterReturn(
-            bookingNumber: request.BookingNumber,
-            returnStationCode: request.ReturnStationCode,
-            returnDateTime: request.ReturnDateTime,
-            returnMeterReadingKm: request.ReturnMeterReadingKm,
-            rowVersion: request.RowVersion,
-            cancellationToken: cancellationToken);
+        var rowVersion = ResolveRowVersion(ifMatch, request.RowVersion, out var hasIfMatch);
 
+        RentalBooking result;
+        try
+        {
+            result = await rentalBookingApi.RegisterReturn(
+                bookingNumber: bookingNumber,
+                returnStationCode: request.ReturnStationCode,
+                returnDateTime: request.ReturnDateTime,
+                returnMeterReadingKm: request.ReturnMeterReadingKm,
+                rowVersion: rowVersion,
+                cancellationToken: cancellationToken);
+        }
+        catch (RentalConcurrencyException) when (hasIfMatch)
+        {
+            throw new PreconditionFailedException($"Booking '{bookingNumber}' was modified by another operation.");
+        }
+
+        ETagHelper.SetETag(Response, result.RowVersion);
         return Ok(result.MapToResponse());
     }
 
     [HttpGet("{bookingNumber:long}")]
     [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<RentalBookingResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByBookingNumber(long bookingNumber, CancellationToken cancellationToken)
     {
@@ -71,7 +90,29 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
             });
         }
 
+        if (ETagHelper.IsIfNoneMatch(Request, booking.RowVersion))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        ETagHelper.SetETag(Response, booking.RowVersion);
         return Ok(booking.MapToResponse());
+    }
+
+    private static byte[]? ResolveRowVersion(string? ifMatch, byte[]? bodyRowVersion, out bool hasIfMatch)
+    {
+        hasIfMatch = !string.IsNullOrWhiteSpace(ifMatch);
+        if (!hasIfMatch)
+        {
+            return bodyRowVersion;
+        }
+
+        if (!ETagHelper.TryParseETag(ifMatch, out var parsed))
+        {
+            throw new PreconditionFailedException("The provided If-Match header is invalid.");
+        }
+
+        return parsed;
     }
 
     [HttpGet]

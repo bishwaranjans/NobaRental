@@ -3,13 +3,10 @@ using NobaRental.Backend.WebApi.Client.Models.Request;
 
 namespace NobaRental.Backend.WebApi.Validators;
 
-public class RegisterReturnRequestValidator : AbstractValidator<RegisterReturnRequest>
+public class ReturnRentalRequestValidator : AbstractValidator<ReturnRentalRequest>
 {
-    public RegisterReturnRequestValidator()
+    public ReturnRentalRequestValidator()
     {
-        RuleFor(x => x.BookingNumber)
-            .GreaterThan(0);
-
         RuleFor(x => x.ReturnStationCode)
             .NotEmpty()
             .MaximumLength(10);

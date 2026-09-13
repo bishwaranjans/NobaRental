@@ -24,6 +24,19 @@ public partial class AddCarDialog(
     protected CarCategoryDto Category { get; set; } = CarCategoryDto.SmallCar;
     protected string StationCode { get; set; } = string.Empty;
     protected long InitialMeterReadingKm { get; set; }
+    protected decimal BaseDayRental { get; set; } = 500m;
+    protected decimal BaseKmPrice { get; set; } = 0m;
+
+    protected bool IsSmallCar => Category == CarCategoryDto.SmallCar;
+
+    protected void OnCategoryChanged(CarCategoryDto newCategory)
+    {
+        Category = newCategory;
+        if (newCategory == CarCategoryDto.SmallCar)
+        {
+            BaseKmPrice = 0m;
+        }
+    }
 
     protected List<StationResponse> Stations = [];
 
@@ -66,7 +79,9 @@ public partial class AddCarDialog(
                 RegistrationNumber: RegistrationNumber.Trim().ToUpperInvariant(),
                 Category: Category,
                 InitialMeterReadingKm: InitialMeterReadingKm,
-                StationCode: StationCode);
+                StationCode: StationCode,
+                BaseDayRental: BaseDayRental,
+                BaseKmPrice: IsSmallCar ? 0m : BaseKmPrice);
 
             using var response = await carApiClient.RegisterCar(request);
 

@@ -42,12 +42,13 @@ All rates and calculated totals are explicitly denoted in **Norwegian Krone (NOK
    - Booking number: **Auto-generated** sequential identifier (`long BookingNumber` via database `IDENTITY(1, 1)`).
    - Pickup station: Selection filters available vehicles physically present at that hub.
    - Available vehicle selection: Automatically locks vehicle category and current odometer reading to prevent tampering, typos, or billing fraud.
-   - Customer SSN: Validated 11-digit national identity number.
-   - Rate snapshots (`baseDayRental` and `baseKmPrice` in NOK) locked onto the booking.
+   - Customer SSN: Validated 11-digit national identity number (masked as `****** 78901` in API responses).
+   - Server-Authoritative Tariffs: Tariffs (`BaseDayRental` and `BaseKmPrice`) are configured per vehicle during fleet registration and resolved strictly on the backend. `RegisterPickupRequest` contains zero client-dictated pricing fields. For small cars, `BaseKmPrice` is strictly enforced to `0.00 NOK`.
 2. **Registration of Returned Car**:
-   - Booking number & Return station.
-   - Return date/time and return odometer reading (validated: `returnKm >= pickupKm`).
-   - **Outcome**: Automatic computation of billed days, kilometers driven, vehicle relocation to return station, and final price breakdown in NOK according to category formulas.
+   - Single RESTful route: `POST /api/v1/rentals/{bookingNumber}/return`.
+   - Route path specifies the booking identity; payload contains return station, return date/time, and return odometer reading (`returnKm >= pickupKm`).
+   - Concurrency precondition: Client passes the entity's `RowVersion` via the standard HTTP `If-Match` header.
+   - **Outcome**: Automatic computation of billed days, kilometers driven, vehicle relocation to return station, and final price breakdown in NOK according to category formulas. Response returns updated `ETag`.
 
 ---
 
@@ -56,19 +57,28 @@ All rates and calculated totals are explicitly denoted in **Norwegian Krone (NOK
 1. **Billing Days Calculation (`numberOfDays`)**:
    - Billed in 24-hour periods, rounded up using ceiling, with a minimum billing of 1 full day:
      $$\text{numberOfDays} = \max(1, \lceil(\text{returnDateTime} - \text{pickupDateTime}).\text{TotalDays}\rceil)$$
-2. **Rate Locking / Snapshotting**:
-   - Rates are snapshotted at pickup time, protecting customers from mid-rental price changes and ensuring tamper-proof audit trails.
+2. **Authoritative Tariffs & Immutability**:
+   - Vehicle rates are maintained on `CarEntity` and snapshotted onto `RentalBookingEntity` during pickup, ensuring tamper-proof historical billing records.
 3. **Automated EF Core Soft-Delete & Global Query Filters**:
    - Behavioral interfaces `ISoftDeletable` and `IAuditableEntity` paired with layered base classes `AuditableEntity` and `SoftDeletableEntity`.
    - `DbContext.SaveChangesAsync` automatically intercepts `EntityState.Deleted` on soft-deletable entities, mutating them to `EntityState.Modified`, setting `IsDeleted = true` and `DeletedAt = timeProvider.GetUtcNow()`.
    - Global query filters (`WHERE [t].[IsDeleted] = 0`) are automatically applied to all queries. Auditing or administrative queries can opt out via `.IgnoreQueryFilters()`.
    - Foreign-key navigations to soft-deletable entities are configured with `.IsRequired(false)` to prevent EF Core 10622 warnings and allow historical rental bookings to load even if their vehicle or station was decommissioned.
-4. **Optimistic Concurrency Control**:
+4. **Optimistic Concurrency & HTTP REST Semantics**:
    - `RowVersion` timestamp tokens on `CarEntity`, `StationEntity`, and `RentalBookingEntity`.
-   - Concurrent updates trigger `DbUpdateConcurrencyException`, translated by the domain to `RentalConcurrencyException` and returned by the Web API as `HTTP 409 Conflict`.
-5. **Server-Side Pagination & Dynamic Sorting**:
+   - Database-level unique filtered index on active bookings: `CREATE UNIQUE INDEX [IX_RentalBooking_RegistrationNumber] ON [RentalBooking] ([RegistrationNumber]) WHERE [Status] = 1` preventing double-rental race conditions.
+   - HTTP `ETag` response headers emitted on entity retrieval, pickup, and return.
+   - `If-Match` header evaluation on mutating transitions: returns RFC 9110 **`412 Precondition Failed`** if stale.
+   - Conditional GETs with `If-None-Match` return **`304 Not Modified`**.
+5. **Centralized Error Handling (RFC 7807)**:
+   - Application-wide `GlobalExceptionHandler` implementing ASP.NET Core `IExceptionHandler`.
+   - Maps domain exceptions (`BookingNotFoundException` -> 404, `PreconditionFailedException` -> 412, `RentalConcurrencyException` -> 409, `RentalValidationException` -> 400) to standard RFC 7807 `ProblemDetails` without controller try-catch boilerplate.
+6. **Built-in Rate Limiting (`Microsoft.AspNetCore.RateLimiting`)**:
+   - Sliding window partition limiter: 100 permits/min for authenticated M2M clients (keyed by `client_id` claim), 30 permits/min for unauthenticated endpoints (keyed by IP).
+   - Rate limit exhaustion yields **`429 Too Many Requests`** with standard `Retry-After` header.
+7. **Server-Side Pagination & Dynamic Sorting**:
    - Domain `PagedResult<T>` model integrated with MudBlazor `ServerData="ServerReload"`, offloading paging, search, and sorting to SQL queries.
-6. **Auditing with `TimeProvider`**:
+8. **Auditing with `TimeProvider`**:
    - Fully testable, deterministic date/time operations via .NET `TimeProvider` (no untestable `DateTime.UtcNow` or `DateTime.Now`).
 
 ---
@@ -117,17 +127,19 @@ CarRental/
 │       │   ├── Controllers/CarsController.cs      # Fleet REST API [Authorize(FleetManage / RentalsRead)]
 │       │   ├── Controllers/StationsController.cs  # Station REST API [Authorize(FleetManage / RentalsRead)]
 │       │   ├── Controllers/RentalBookingsController.cs # Rental REST API [Authorize(RentalsPickup / RentalsReturn / RentalsRead)]
-│       │   ├── Startups/                          # AuthenticationStartup (JwtBearer), SwaggerStartup, HealthStartup
+│       │   ├── Helpers/ETagHelper.cs              # ETag generation, If-Match & If-None-Match header parsing
+│       │   ├── Middleware/GlobalExceptionHandler.cs # Centralized RFC 7807 ProblemDetails exception handling
+│       │   ├── Startups/                          # AuthenticationStartup, RateLimitingStartup, ValidationStartup, SwaggerStartup, HealthStartup
 │       │   ├── Validators/                        # FluentValidation request validators
 │       │   └── Mapping/                           # Domain Models <-> Client Response DTOs & Enum Value Mappers
 │       ├── NobaRental.Backend.WebApi.Client/      # Shared Client library
 │       │   ├── ICarApiClient.cs                   # RestEase typed client for cars
 │       │   ├── IStationApiClient.cs               # RestEase typed client for stations
 │       │   ├── IRentalBookingApiClient.cs         # RestEase typed client for rentals & price estimates
-│       │   ├── Models/Request/                    # DTO request records
+│       │   ├── Models/Request/                    # DTO request records (RegisterPickupRequest, ReturnRentalRequest, etc.)
 │       │   ├── Models/Response/                   # DTO response records & PagedResultResponse<T>
 │       │   └── ServiceCollectionExtensions.cs     # Typed client DI registration
-│       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration, auth & enum mapping tests (49 tests)
+│       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration, auth, rate-limiting & concurrency tests (52 tests)
 ├── NobaRental-Frontend/
 │   └── src/
 │       ├── NobaRental.Frontend.Server/            # Blazor Server host with YARP reverse proxy & NavMenu
@@ -220,15 +232,15 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 | `DELETE` | `/api/v1/cars/{registrationNumber}` | Decommission vehicle (soft-delete) |
 
 ### Rental Booking Endpoints
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/v1/rentals/pickup` | Register vehicle pickup with station, locked rates, and SSN |
-| `POST` | `/api/v1/rentals/return` | Register vehicle return, calculate totals, and relocate vehicle |
-| `POST` | `/api/v1/rentals/estimate-price` | Single Source of Truth: estimate price and duration in advance of return |
-| `GET` | `/api/v1/rentals/{bookingNumber}` | Retrieve specific rental booking by unique booking number |
-| `GET` | `/api/v1/rentals` | Paginated booking records with sorting and filters |
-| `GET` | `/api/v1/rentals/active` | Retrieve currently active ongoing rentals |
-| `GET` | `/health` | Health check endpoint reporting backend and SQL database readiness |
+| Method | Endpoint | Description | Headers / Concurrency |
+|---|---|---|---|
+| `POST` | `/api/v1/rentals/pickup` | Register vehicle pickup with station and SSN (resolves vehicle tariffs server-side) | Emits `ETag` (`201 Created`) |
+| `POST` | `/api/v1/rentals/{bookingNumber}/return` | Register vehicle return, calculate totals, and relocate vehicle | Requires/Evaluates `If-Match` ETag (`412 Precondition Failed` on mismatch; emits new `ETag` on `200 OK`) |
+| `POST` | `/api/v1/rentals/estimate-price` | Single Source of Truth: estimate price and duration in advance of return | - |
+| `GET` | `/api/v1/rentals/{bookingNumber}` | Retrieve specific rental booking by unique booking number | Supports `If-None-Match` (`304 Not Modified`); emits `ETag` |
+| `GET` | `/api/v1/rentals` | Paginated booking records with sorting and filters | - |
+| `GET` | `/api/v1/rentals/active` | Retrieve currently active ongoing rentals | - |
+| `GET` | `/health` | Health check endpoint reporting backend and SQL database readiness | - |
 
 ---
 
@@ -280,7 +292,7 @@ Fine-grained permissions enforce least-privilege access across all controller ac
 | Scope (Permission) | Authorization Policy | Applied Endpoints |
 |---|---|---|
 | `rentals:pickup` | `RentalsPickup` | `POST /api/v1/rentals/pickup` |
-| `rentals:return` | `RentalsReturn` | `POST /api/v1/rentals/return` |
+| `rentals:return` | `RentalsReturn` | `POST /api/v1/rentals/{bookingNumber}/return` |
 | `rentals:read` | `RentalsRead` | `GET /api/v1/rentals/**`, `POST /api/v1/rentals/estimate-price`, `GET /api/v1/cars/**`, `GET /api/v1/stations/**` |
 | `fleet:manage` | `FleetManage` | `POST /api/v1/cars`, `DELETE /api/v1/cars/{reg}`, `POST /api/v1/stations`, `PUT /api/v1/stations/{code}`, `DELETE /api/v1/stations/{code}` |
 

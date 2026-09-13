@@ -9,24 +9,14 @@ public sealed class NobaRentalDbContextTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public void NobaRentalDbContext_ModelConfiguration_HasExpectedMetadata()
+    public void RentalBookingEntity_Configuration_HasExpectedMetadata()
     {
-        // Arrange
-        var options = new DbContextOptionsBuilder<NobaRentalDbContext>()
-            .UseSqlServer("Server=fake;Database=NobaRentalModelTest;Trusted_Connection=True;Encrypt=False;")
-            .Options;
+        using var ctx = CreateTestDbContext();
+        var entityType = ctx.Model.FindEntityType(typeof(RentalBookingEntity));
 
-        using var ctx = new NobaRentalDbContext(options);
-
-        // Act
-        var model = ctx.Model;
-        var entityType = model.FindEntityType(typeof(RentalBookingEntity));
-
-        // Assert
         Assert.NotNull(entityType);
         Assert.Equal("RentalBooking", entityType.GetTableName());
 
-        // Primary key
         var primaryKey = entityType.FindPrimaryKey();
         Assert.NotNull(primaryKey);
         Assert.Equal(nameof(RentalBookingEntity.BookingNumber), primaryKey.Properties.Single().Name);
@@ -35,31 +25,50 @@ public sealed class NobaRentalDbContextTests
         Assert.NotNull(bookingNumberProperty);
         Assert.Equal(Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.OnAdd, bookingNumberProperty.ValueGenerated);
 
-        // RegistrationNumber
         var regProperty = entityType.FindProperty(nameof(RentalBookingEntity.RegistrationNumber));
         Assert.NotNull(regProperty);
         Assert.Equal(20, regProperty.GetMaxLength());
 
-        // CustomerSsn
         var ssnProperty = entityType.FindProperty(nameof(RentalBookingEntity.CustomerSsn));
         Assert.NotNull(ssnProperty);
         Assert.Equal(20, ssnProperty.GetMaxLength());
 
-        // Monetary precision (18, 2)
-        var baseDayRental = entityType.FindProperty(nameof(RentalBookingEntity.BaseDayRental));
-        Assert.NotNull(baseDayRental);
-        Assert.Equal(18, baseDayRental.GetPrecision());
-        Assert.Equal(2, baseDayRental.GetScale());
+        AssertMonetaryPrecision(entityType, nameof(RentalBookingEntity.BaseDayRental));
+        AssertMonetaryPrecision(entityType, nameof(RentalBookingEntity.BaseKmPrice));
+        AssertMonetaryPrecision(entityType, nameof(RentalBookingEntity.TotalPrice));
+    }
 
-        var baseKmPrice = entityType.FindProperty(nameof(RentalBookingEntity.BaseKmPrice));
-        Assert.NotNull(baseKmPrice);
-        Assert.Equal(18, baseKmPrice.GetPrecision());
-        Assert.Equal(2, baseKmPrice.GetScale());
+    [Fact]
+    public void CarEntity_Configuration_HasExpectedMetadata()
+    {
+        using var ctx = CreateTestDbContext();
+        var entityType = ctx.Model.FindEntityType(typeof(CarEntity));
 
-        var totalPrice = entityType.FindProperty(nameof(RentalBookingEntity.TotalPrice));
-        Assert.NotNull(totalPrice);
-        Assert.Equal(18, totalPrice.GetPrecision());
-        Assert.Equal(2, totalPrice.GetScale());
+        Assert.NotNull(entityType);
+        Assert.Equal("Car", entityType.GetTableName());
+
+        var primaryKey = entityType.FindPrimaryKey();
+        Assert.NotNull(primaryKey);
+        Assert.Equal(nameof(CarEntity.RegistrationNumber), primaryKey.Properties.Single().Name);
+
+        AssertMonetaryPrecision(entityType, nameof(CarEntity.BaseDayRental));
+        AssertMonetaryPrecision(entityType, nameof(CarEntity.BaseKmPrice));
+    }
+
+    private static NobaRentalDbContext CreateTestDbContext()
+    {
+        var options = new DbContextOptionsBuilder<NobaRentalDbContext>()
+            .UseSqlServer("Server=fake;Database=NobaRentalModelTest;Trusted_Connection=True;Encrypt=False;")
+            .Options;
+        return new NobaRentalDbContext(options);
+    }
+
+    private static void AssertMonetaryPrecision(Microsoft.EntityFrameworkCore.Metadata.IEntityType entityType, string propertyName)
+    {
+        var property = entityType.FindProperty(propertyName);
+        Assert.NotNull(property);
+        Assert.Equal(18, property.GetPrecision());
+        Assert.Equal(2, property.GetScale());
     }
 
     [Fact]

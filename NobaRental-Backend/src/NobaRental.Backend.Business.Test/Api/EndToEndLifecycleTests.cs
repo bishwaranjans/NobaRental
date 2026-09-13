@@ -69,7 +69,7 @@ public sealed class EndToEndLifecycleTests : IDisposable
     public async Task CarFleet_CompleteLifecycle_RegisterInventoryAvailabilityAndSoftDelete()
     {
         // 1. Register vehicle at OSL
-        var car = await _carApi.RegisterCar("EV88888", CarCategory.Combi, 12000, "OSL", Token);
+        var car = await _carApi.RegisterCar("EV88888", CarCategory.Combi, 12000, "OSL", 600m, 3m, Token);
         Assert.Equal("EV88888", car.RegistrationNumber);
         Assert.Equal(CarStatus.Available, car.Status);
         Assert.Equal("OSL", car.CurrentStationCode);
@@ -90,14 +90,14 @@ public sealed class EndToEndLifecycleTests : IDisposable
     [Fact]
     public async Task RentalBooking_CompleteLifecycle_EstimatePickupOneWayReturnAndRelocation()
     {
-        // 1. Register car at OSL
-        await _carApi.RegisterCar("EV77777", CarCategory.Combi, 10000, "OSL", Token);
+        // 1. Register car at OSL with 600 NOK/day and 5 NOK/km tariff
+        await _carApi.RegisterCar("EV77777", CarCategory.Combi, 10000, "OSL", 600m, 5m, Token);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 10, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(2);
 
-        // 2. Pickup
+        // 2. Pickup (rates are resolved authoritatively from EV77777)
         var booking = await _rentalApi.RegisterPickup(
-            "EV77777", "12345678901", CarCategory.Combi, "OSL", pickupTime, 10000, 600m, 5m, cancellationToken: Token);
+            "EV77777", "12345678901", CarCategory.Combi, "OSL", pickupTime, 10000, cancellationToken: Token);
         Assert.Equal(RentalStatus.Active, booking.Status);
 
         // 3. Verify Car status is Rented

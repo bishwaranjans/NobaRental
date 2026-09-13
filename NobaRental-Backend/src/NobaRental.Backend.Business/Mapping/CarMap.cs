@@ -13,6 +13,8 @@ internal static class CarMap
             CurrentMeterReadingKm: entity.CurrentMeterReadingKm,
             Status: entity.Status.ToDomain(),
             CurrentStationCode: entity.CurrentStationCode,
+            BaseDayRental: entity.BaseDayRental,
+            BaseKmPrice: entity.BaseKmPrice,
             IsDeleted: entity.IsDeleted,
             RowVersion: entity.RowVersion);
 
@@ -21,6 +23,8 @@ internal static class CarMap
         CarCategory category,
         long initialMeterReadingKm,
         string stationCode,
+        decimal baseDayRental,
+        decimal baseKmPrice = 0m,
         CarStatus status = CarStatus.Available) =>
         new()
         {
@@ -29,5 +33,7 @@ internal static class CarMap
             CurrentMeterReadingKm = initialMeterReadingKm,
             Status = status.ToEntity(),
             CurrentStationCode = stationCode.Trim().ToUpperInvariant(),
+            BaseDayRental = baseDayRental,
+            BaseKmPrice = baseKmPrice,
         };
 }

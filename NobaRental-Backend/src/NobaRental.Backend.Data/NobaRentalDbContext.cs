@@ -73,9 +73,9 @@ public class NobaRentalDbContext(
             new StationEntity { Code = "OSLO-C", Name = "Oslo Central Station", City = "Oslo", IsActive = true, IsDeleted = false, CreatedAt = defaultCreated });
 
         modelBuilder.Entity<CarEntity>().HasData(
-            new CarEntity { RegistrationNumber = "EV12345", Category = Entities.Values.CarCategoryValue.SmallCar, CurrentMeterReadingKm = 1000, Status = Entities.Values.CarStatusValue.Available, CurrentStationCode = "OSL", IsDeleted = false, CreatedAt = defaultCreated },
-            new CarEntity { RegistrationNumber = "BT20001", Category = Entities.Values.CarCategoryValue.Combi, CurrentMeterReadingKm = 5000, Status = Entities.Values.CarStatusValue.Available, CurrentStationCode = "OSL", IsDeleted = false, CreatedAt = defaultCreated },
-            new CarEntity { RegistrationNumber = "TR99001", Category = Entities.Values.CarCategoryValue.Truck, CurrentMeterReadingKm = 15000, Status = Entities.Values.CarStatusValue.Available, CurrentStationCode = "BGO", IsDeleted = false, CreatedAt = defaultCreated });
+            new CarEntity { RegistrationNumber = "EV12345", Category = Entities.Values.CarCategoryValue.SmallCar, CurrentMeterReadingKm = 1000, Status = Entities.Values.CarStatusValue.Available, CurrentStationCode = "OSL", BaseDayRental = 500m, BaseKmPrice = 0m, IsDeleted = false, CreatedAt = defaultCreated },
+            new CarEntity { RegistrationNumber = "BT20001", Category = Entities.Values.CarCategoryValue.Combi, CurrentMeterReadingKm = 5000, Status = Entities.Values.CarStatusValue.Available, CurrentStationCode = "OSL", BaseDayRental = 700m, BaseKmPrice = 2.5m, IsDeleted = false, CreatedAt = defaultCreated },
+            new CarEntity { RegistrationNumber = "TR99001", Category = Entities.Values.CarCategoryValue.Truck, CurrentMeterReadingKm = 15000, Status = Entities.Values.CarStatusValue.Available, CurrentStationCode = "BGO", BaseDayRental = 1200m, BaseKmPrice = 4m, IsDeleted = false, CreatedAt = defaultCreated });
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

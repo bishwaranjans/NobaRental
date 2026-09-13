@@ -12,6 +12,8 @@ internal static class CarMap
             CurrentMeterReadingKm: domain.CurrentMeterReadingKm,
             Status: domain.Status.MapToResponse(),
             CurrentStationCode: domain.CurrentStationCode,
+            BaseDayRental: domain.BaseDayRental,
+            BaseKmPrice: domain.BaseKmPrice,
             RowVersion: domain.RowVersion);
 
     public static IReadOnlyCollection<CarResponse> MapToResponse(this IReadOnlyCollection<Car> items) =>

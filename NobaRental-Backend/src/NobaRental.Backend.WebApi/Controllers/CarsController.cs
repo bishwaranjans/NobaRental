@@ -8,6 +8,8 @@ using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Client.Models.Values;
 using NobaRental.Backend.WebApi.Mapping;
 
+using NobaRental.Backend.WebApi.Helpers;
+
 namespace NobaRental.Backend.WebApi.Controllers;
 
 [ApiController]
@@ -26,8 +28,11 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
             category: request.Category.MapToDomain(),
             initialMeterReadingKm: request.InitialMeterReadingKm,
             stationCode: request.StationCode,
+            baseDayRental: request.BaseDayRental,
+            baseKmPrice: request.BaseKmPrice,
             cancellationToken: cancellationToken);
 
+        ETagHelper.SetETag(Response, result.RowVersion);
         return CreatedAtAction(nameof(GetByRegistrationNumber), new { registrationNumber = result.RegistrationNumber }, result.MapToResponse());
     }
 
@@ -84,6 +89,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     [HttpGet("{registrationNumber}")]
     [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<CarResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByRegistrationNumber(string registrationNumber, CancellationToken cancellationToken)
     {
@@ -98,6 +104,12 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
             });
         }
 
+        if (ETagHelper.IsIfNoneMatch(Request, car.RowVersion))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        ETagHelper.SetETag(Response, car.RowVersion);
         return Ok(car.MapToResponse());
     }
 }

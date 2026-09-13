@@ -8,4 +8,6 @@ public sealed record CarResponse(
     long CurrentMeterReadingKm,
     CarStatusDto Status,
     string CurrentStationCode,
+    decimal BaseDayRental,
+    decimal BaseKmPrice,
     byte[]? RowVersion = null);

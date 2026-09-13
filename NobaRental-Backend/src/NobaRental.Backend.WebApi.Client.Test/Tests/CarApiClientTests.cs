@@ -19,14 +19,14 @@ public sealed class CarApiClientTests : TestWebHost
     {
         // Arrange
         var api = Substitute.For<ICarFleetApi>();
-        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL");
+        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL", BaseDayRental: 500m, BaseKmPrice: 0m);
 
-        api.RegisterCar("EV12345", CarCategory.SmallCar, 1500, "OSL", Arg.Any<CancellationToken>())
+        api.RegisterCar("EV12345", CarCategory.SmallCar, 1500, "OSL", 500m, 0m, Arg.Any<CancellationToken>())
            .Returns(domainCar);
 
         ReplaceService(api);
 
-        var request = new RegisterCarRequest("EV12345", DtoCarCategory.SmallCar, 1500, "OSL");
+        var request = new RegisterCarRequest("EV12345", DtoCarCategory.SmallCar, 1500, "OSL", 500m, 0m);
 
         // Act
         using var result = await Client.RegisterCar(request, Token);
@@ -40,6 +40,8 @@ public sealed class CarApiClientTests : TestWebHost
         Assert.Equal(1500, content.CurrentMeterReadingKm);
         Assert.Equal(DtoCarStatus.Available, content.Status);
         Assert.Equal("OSL", content.CurrentStationCode);
+        Assert.Equal(500m, content.BaseDayRental);
+        Assert.Equal(0m, content.BaseKmPrice);
     }
 
     [Fact]
@@ -145,5 +147,25 @@ public sealed class CarApiClientTests : TestWebHost
 
         // Assert
         Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task GetCarByRegistrationNumber_WithIfNoneMatch_Returns304NotModified()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        byte[] rowVersion = [11, 22, 33, 44];
+        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL", RowVersion: rowVersion);
+        api.GetCarByRegistrationNumber("EV12345", Arg.Any<CancellationToken>()).Returns(domainCar);
+        ReplaceService(api);
+
+        using var client = GetClient();
+        client.DefaultRequestHeaders.IfNoneMatch.Add(new System.Net.Http.Headers.EntityTagHeaderValue($"\"{Convert.ToBase64String(rowVersion)}\""));
+
+        // Act
+        using var response = await client.GetAsync("/api/v1/cars/EV12345", Token);
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.NotModified, response.StatusCode);
     }
 }

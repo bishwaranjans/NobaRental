@@ -16,7 +16,9 @@
                                   Immediate="true" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect @bind-Value="Category"
+                    <MudSelect T="CarCategoryDto"
+                               Value="Category"
+                               ValueChanged="OnCategoryChanged"
                                Label="Vehicle Category"
                                Variant="Variant.Outlined">
                         <MudSelectItem Value="CarCategoryDto.SmallCar">Small car</MudSelectItem>
@@ -40,6 +42,24 @@
                     <MudNumericField @bind-Value="InitialMeterReadingKm"
                                      Label="Starting Meter Reading (km)"
                                      Min="0"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="BaseDayRental"
+                                     Label="Base Day Rental (NOK)"
+                                     Min="0.01m"
+                                     Format="N2"
+                                     Required="true"
+                                     RequiredError="Day rate is required"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="BaseKmPrice"
+                                     Label="Base Km Price (NOK)"
+                                     Min="0m"
+                                     Format="N2"
+                                     Disabled="@IsSmallCar"
+                                     HelperText="@(IsSmallCar ? "Km rate is 0 NOK for small cars" : "Price per kilometer driven")"
                                      Variant="Variant.Outlined" />
                 </MudItem>
             </MudGrid>

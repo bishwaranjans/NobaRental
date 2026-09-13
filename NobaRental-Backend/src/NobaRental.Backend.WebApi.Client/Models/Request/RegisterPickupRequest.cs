@@ -9,6 +9,4 @@ public sealed record RegisterPickupRequest(
     string PickupStationCode,
     DateTimeOffset PickupDateTime,
     long PickupMeterReadingKm,
-    decimal BaseDayRental,
-    decimal BaseKmPrice,
     string Currency = "NOK");

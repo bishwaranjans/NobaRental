@@ -41,6 +41,8 @@ public partial class InitialCreate : Migration
                 CurrentMeterReadingKm = table.Column<long>(type: "bigint", nullable: false),
                 Status = table.Column<int>(type: "int", nullable: false),
                 CurrentStationCode = table.Column<string>(type: "varchar(10)", unicode: false, maxLength: 10, nullable: false),
+                BaseDayRental = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                BaseKmPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                 RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
                 CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
                 ModifiedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
@@ -119,12 +121,12 @@ public partial class InitialCreate : Migration
 
         migrationBuilder.InsertData(
             table: "Car",
-            columns: new[] { "RegistrationNumber", "Category", "CreatedAt", "CurrentMeterReadingKm", "CurrentStationCode", "DeletedAt", "IsDeleted", "ModifiedAt", "Status" },
+            columns: new[] { "RegistrationNumber", "BaseDayRental", "BaseKmPrice", "Category", "CreatedAt", "CurrentMeterReadingKm", "CurrentStationCode", "DeletedAt", "IsDeleted", "ModifiedAt", "Status" },
             values: new object[,]
             {
-                    { "BT20001", 2, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 5000L, "OSL", null, false, null, 1 },
-                    { "EV12345", 1, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 1000L, "OSL", null, false, null, 1 },
-                    { "TR99001", 3, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 15000L, "BGO", null, false, null, 1 }
+                    { "BT20001", 700m, 2.5m, 2, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 5000L, "OSL", null, false, null, 1 },
+                    { "EV12345", 500m, 0m, 1, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 1000L, "OSL", null, false, null, 1 },
+                    { "TR99001", 1200m, 4m, 3, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), 15000L, "BGO", null, false, null, 1 }
             });
 
         migrationBuilder.CreateIndex(

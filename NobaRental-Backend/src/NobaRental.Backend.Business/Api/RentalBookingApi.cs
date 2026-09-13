@@ -20,11 +20,9 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         string pickupStationCode,
         DateTimeOffset pickupDateTime,
         long pickupMeterReadingKm,
-        decimal baseDayRental,
-        decimal baseKmPrice,
         CancellationToken cancellationToken = default)
     {
-        ValidatePickupArguments(registrationNumber, customerSsn, pickupStationCode, pickupMeterReadingKm, baseDayRental, baseKmPrice);
+        ValidatePickupArguments(registrationNumber, customerSsn, pickupStationCode, pickupMeterReadingKm);
 
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
         var normalizedStation = pickupStationCode.Trim().ToUpperInvariant();
@@ -47,8 +45,8 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             pickupStationCode: normalizedStation,
             pickupDateTime: pickupDateTime,
             pickupMeterReadingKm: pickupMeterReadingKm,
-            baseDayRental: baseDayRental,
-            baseKmPrice: baseKmPrice);
+            baseDayRental: car.BaseDayRental,
+            baseKmPrice: car.BaseKmPrice);
 
         await ctx.RentalBookings.AddAsync(entity, cancellationToken);
 
@@ -228,14 +226,12 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             Currency: entity.Currency);
     }
 
-    private static void ValidatePickupArguments(string reg, string ssn, string station, long meter, decimal dayPrice, decimal kmPrice)
+    private static void ValidatePickupArguments(string reg, string ssn, string station, long meter)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reg);
         ArgumentException.ThrowIfNullOrWhiteSpace(ssn);
         ArgumentException.ThrowIfNullOrWhiteSpace(station);
         ArgumentOutOfRangeException.ThrowIfNegative(meter);
-        ArgumentOutOfRangeException.ThrowIfNegative(dayPrice);
-        ArgumentOutOfRangeException.ThrowIfNegative(kmPrice);
     }
 
     private static void ValidateCarForPickup(CarEntity? car, string reg, CarCategory category, string station, long meter)

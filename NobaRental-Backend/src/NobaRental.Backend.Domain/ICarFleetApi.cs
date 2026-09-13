@@ -10,6 +10,8 @@ public interface ICarFleetApi
         CarCategory category,
         long initialMeterReadingKm,
         string stationCode,
+        decimal baseDayRental,
+        decimal baseKmPrice = 0m,
         CancellationToken cancellationToken = default);
 
     Task DeleteCar(string registrationNumber, CancellationToken cancellationToken = default);

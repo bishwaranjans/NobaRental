@@ -29,6 +29,14 @@ partial class NobaRentalDbContextModelSnapshot : ModelSnapshot
                         .IsUnicode(false)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<decimal>("BaseDayRental")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseKmPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Category")
                         .HasColumnType("int");
 
@@ -72,6 +80,8 @@ partial class NobaRentalDbContextModelSnapshot : ModelSnapshot
                         new
                         {
                             RegistrationNumber = "EV12345",
+                            BaseDayRental = 500m,
+                            BaseKmPrice = 0m,
                             Category = 1,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CurrentMeterReadingKm = 1000L,
@@ -83,6 +93,8 @@ partial class NobaRentalDbContextModelSnapshot : ModelSnapshot
                         new
                         {
                             RegistrationNumber = "BT20001",
+                            BaseDayRental = 700m,
+                            BaseKmPrice = 2.5m,
                             Category = 2,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CurrentMeterReadingKm = 5000L,
@@ -94,6 +106,8 @@ partial class NobaRentalDbContextModelSnapshot : ModelSnapshot
                         new
                         {
                             RegistrationNumber = "TR99001",
+                            BaseDayRental = 1200m,
+                            BaseKmPrice = 4m,
                             Category = 3,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             CurrentMeterReadingKm = 15000L,

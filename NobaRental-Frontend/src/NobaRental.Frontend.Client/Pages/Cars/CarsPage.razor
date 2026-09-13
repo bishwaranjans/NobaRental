@@ -85,6 +85,8 @@
                 <MudTh><MudTableSortLabel SortLabel="station" T="CarResponse">Current Station</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortLabel="odometer" T="CarResponse">Current Odometer</MudTableSortLabel></MudTh>
                 <MudTh><MudTableSortLabel SortLabel="status" T="CarResponse">Status</MudTableSortLabel></MudTh>
+                <MudTh>Day Rate</MudTh>
+                <MudTh>Km Rate</MudTh>
                 <MudTh Style="text-align: right">Actions</MudTh>
             </HeaderContent>
             <RowTemplate>
@@ -108,6 +110,12 @@
                     <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">
                         @context.Status.ToString()
                     </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Day Rate">
+                    @context.BaseDayRental.ToString("N2") NOK
+                </MudTd>
+                <MudTd DataLabel="Km Rate">
+                    @(context.Category == CarCategoryDto.SmallCar ? "0.00 NOK (incl.)" : $"{context.BaseKmPrice:N2} NOK")
                 </MudTd>
                 <MudTd DataLabel="Actions" Style="text-align: right">
                     @if (context.Status != CarStatusDto.Rented)

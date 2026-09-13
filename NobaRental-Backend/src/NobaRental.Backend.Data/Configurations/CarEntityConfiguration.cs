@@ -34,6 +34,14 @@ public class CarEntityConfiguration : IEntityTypeConfiguration<CarEntity>
         b.Property(x => x.RowVersion)
             .IsRowVersion();
 
+        b.Property(x => x.BaseDayRental)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        b.Property(x => x.BaseKmPrice)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
         b.HasQueryFilter(x => !x.IsDeleted);
 
         b.HasOne(x => x.CurrentStation)
