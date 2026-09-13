@@ -23,7 +23,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
         {
             var result = await carFleetApi.RegisterCar(
                 registrationNumber: request.RegistrationNumber,
-                category: (CarCategory)request.Category,
+                category: request.Category.MapToDomain(),
                 initialMeterReadingKm: request.InitialMeterReadingKm,
                 stationCode: request.StationCode,
                 cancellationToken: cancellationToken);
@@ -62,7 +62,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
         [FromQuery] bool? sortDescending = null,
         CancellationToken cancellationToken = default)
     {
-        var domainStatus = status.HasValue ? (CarStatus?)status.Value : null;
+        var domainStatus = status.MapToDomain();
         var paged = await carFleetApi.GetCars(
             pageNumber ?? 1,
             pageSize ?? 10,
@@ -104,7 +104,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
         [FromQuery] CarCategoryDto? category = null,
         CancellationToken cancellationToken = default)
     {
-        var domainCategory = category.HasValue ? (CarCategory?)category.Value : null;
+        var domainCategory = category.MapToDomain();
         var cars = await carFleetApi.GetAvailableCars(stationCode, domainCategory, cancellationToken);
         return Ok(cars.MapToResponse());
     }

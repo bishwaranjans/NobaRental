@@ -36,16 +36,19 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudDatePicker @bind-Date="ReturnDate"
+                                       @bind-Date:after="UpdateEstimateAsync"
                                        Label="Return Date"
                                        Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudTimePicker @bind-Time="ReturnTime"
+                                       @bind-Time:after="UpdateEstimateAsync"
                                        Label="Return Time"
                                        Variant="Variant.Outlined" />
                     </MudItem>
                     <MudItem xs="12">
                         <MudNumericField @bind-Value="ReturnMeterReadingKm"
+                                         @bind-Value:after="UpdateEstimateAsync"
                                          Label="Return Meter Reading (km)"
                                          Min="@Booking.PickupMeterReadingKm"
                                          HelperText="@($"Must be at least {Booking.PickupMeterReadingKm} km")"
@@ -54,13 +57,17 @@
                 </MudGrid>
             </MudForm>
 
-            @if (EstimatedDays > 0 && EstimatedKm >= 0)
+            @if (IsEstimating)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-2" />
+            }
+            else if (EstimatedTotalPrice.HasValue)
             {
                 <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
                     <MudText Typo="Typo.body2"><strong>Estimated Billed Days:</strong> @EstimatedDays day(s)</MudText>
                     <MudText Typo="Typo.body2"><strong>Kilometers Driven:</strong> @EstimatedKm km</MudText>
                     <MudText Typo="Typo.subtitle1" Color="Color.Success">
-                        <strong>Calculated Price:</strong> @EstimatedTotalPrice.ToString("N2") NOK
+                        <strong>Calculated Price:</strong> @EstimatedTotalPrice.Value.ToString("N2") @(EstimateCurrency ?? "NOK")
                     </MudText>
                 </MudAlert>
             }

@@ -40,7 +40,7 @@ public partial class AddCarDialog(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Could not load stations: {ex.Message}");
+            snackbar.AddError($"Could not load stations: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 
@@ -77,13 +77,13 @@ public partial class AddCarDialog(
             }
             else
             {
-                var error = response.StringContent ?? "Failed to register vehicle.";
+                var error = ApiExceptionHelper.GetErrorMessage(response.StringContent, "Failed to register vehicle.");
                 snackbar.AddError(error);
             }
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error: {ex.Message}");
+            snackbar.AddError($"Error: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
         finally
         {

@@ -39,4 +39,10 @@ public interface IRentalBookingApi
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<RentalBooking>> GetActiveBookings(CancellationToken cancellationToken = default);
+
+    Task<RentalPriceEstimate> EstimatePrice(
+        long bookingNumber,
+        DateTimeOffset returnDateTime,
+        long returnMeterReadingKm,
+        CancellationToken cancellationToken = default);
 }

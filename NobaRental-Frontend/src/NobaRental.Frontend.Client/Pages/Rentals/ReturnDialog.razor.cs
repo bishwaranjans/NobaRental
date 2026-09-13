@@ -3,7 +3,6 @@ using MudBlazor;
 using NobaRental.Backend.WebApi.Client;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
-using NobaRental.Backend.WebApi.Client.Models.Values;
 using NobaRental.Frontend.Client.Helpers;
 
 namespace NobaRental.Frontend.Client.Pages.Rentals;
@@ -46,41 +45,68 @@ public partial class ReturnDialog(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Could not load stations: {ex.Message}");
+            snackbar.AddError($"Could not load stations: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
+
+        await UpdateEstimateAsync();
     }
 
-    protected int EstimatedDays
+    protected int? EstimatedDays { get; set; }
+    protected long? EstimatedKm { get; set; }
+    protected decimal? EstimatedTotalPrice { get; set; }
+    protected string? EstimateCurrency { get; set; }
+    protected bool IsEstimating { get; set; }
+
+    private DateTimeOffset GetReturnDateTime()
     {
-        get
-        {
-            var now = timeProvider.GetLocalNow();
-            var date = ReturnDate ?? now.Date;
-            var time = ReturnTime ?? now.TimeOfDay;
-            var returnDateTime = new DateTimeOffset(date.Year, date.Month, date.Day, time.Hours, time.Minutes, time.Seconds, TimeSpan.Zero);
-            var elapsed = (returnDateTime - Booking.PickupDateTime).TotalDays;
-            return Math.Max(1, (int)Math.Ceiling(elapsed));
-        }
+        var now = timeProvider.GetLocalNow();
+        var date = ReturnDate ?? now.Date;
+        var time = ReturnTime ?? now.TimeOfDay;
+        return new DateTimeOffset(date.Year, date.Month, date.Day, time.Hours, time.Minutes, time.Seconds, TimeSpan.Zero);
     }
 
-    protected long EstimatedKm => Math.Max(0, ReturnMeterReadingKm - Booking.PickupMeterReadingKm);
-
-    protected decimal EstimatedTotalPrice
+    protected async Task UpdateEstimateAsync()
     {
-        get
+        if (ReturnMeterReadingKm < Booking.PickupMeterReadingKm)
         {
-            var days = EstimatedDays;
-            var km = EstimatedKm;
+            EstimatedDays = null;
+            EstimatedKm = null;
+            EstimatedTotalPrice = null;
+            return;
+        }
 
-            return Booking.Category switch
+        try
+        {
+            IsEstimating = true;
+            var request = new EstimatePriceRequest(
+                Booking.BookingNumber,
+                GetReturnDateTime(),
+                ReturnMeterReadingKm);
+
+            using var response = await apiClient.EstimatePrice(request);
+            if (response.ResponseMessage.IsSuccessStatusCode && response.GetContent() is { } content)
             {
-                CarCategoryDto.SmallCar => Math.Round(Booking.BaseDayRental * days, 2, MidpointRounding.AwayFromZero),
-                CarCategoryDto.Combi => Math.Round(Booking.BaseDayRental * days * 1.3m, 2, MidpointRounding.AwayFromZero)
-                    + Math.Round(Booking.BaseKmPrice * km, 2, MidpointRounding.AwayFromZero),
-                CarCategoryDto.Truck => Math.Round(Booking.BaseDayRental * days * 1.5m, 2, MidpointRounding.AwayFromZero)
-                    + Math.Round(Booking.BaseKmPrice * km * 1.5m, 2, MidpointRounding.AwayFromZero),
-                _ => 0m
-            };
+                EstimatedDays = content.CalculatedDays;
+                EstimatedKm = content.CalculatedKm;
+                EstimatedTotalPrice = content.EstimatedPrice;
+                EstimateCurrency = content.Currency;
+            }
+            else
+            {
+                EstimatedDays = null;
+                EstimatedKm = null;
+                EstimatedTotalPrice = null;
+            }
+        }
+        catch
+        {
+            EstimatedDays = null;
+            EstimatedKm = null;
+            EstimatedTotalPrice = null;
+        }
+        finally
+        {
+            IsEstimating = false;
         }
     }
 
@@ -98,15 +124,10 @@ public partial class ReturnDialog(
 
         try
         {
-            var now = timeProvider.GetLocalNow();
-            var date = ReturnDate ?? now.Date;
-            var time = ReturnTime ?? now.TimeOfDay;
-            var returnDateTime = new DateTimeOffset(date.Year, date.Month, date.Day, time.Hours, time.Minutes, time.Seconds, TimeSpan.Zero);
-
             var request = new RegisterReturnRequest(
                 BookingNumber: Booking.BookingNumber,
                 ReturnStationCode: ReturnStationCode,
-                ReturnDateTime: returnDateTime,
+                ReturnDateTime: GetReturnDateTime(),
                 ReturnMeterReadingKm: ReturnMeterReadingKm,
                 RowVersion: Booking.RowVersion);
 
@@ -119,13 +140,13 @@ public partial class ReturnDialog(
             }
             else
             {
-                var error = response.StringContent ?? "Failed to register return.";
+                var error = ApiExceptionHelper.GetErrorMessage(response.StringContent, "Failed to register return.");
                 snackbar.AddError(error);
             }
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error: {ex.Message}");
+            snackbar.AddError($"Error: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
         finally
         {

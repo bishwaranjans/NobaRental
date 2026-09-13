@@ -256,6 +256,39 @@ public sealed class RentalBookingApiClientTests : TestWebHost
     }
 
     [Fact]
+    public async Task EstimatePrice_Success()
+    {
+        // Arrange
+        var api = Substitute.For<IRentalBookingApi>();
+        var returnTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
+        var estimate = new RentalPriceEstimate(
+            BookingNumber: 101L,
+            CalculatedDays: 2,
+            CalculatedKm: 150,
+            EstimatedPrice: 1650m,
+            Currency: "NOK");
+
+        api.EstimatePrice(101L, returnTime, 10150, Arg.Any<CancellationToken>())
+           .Returns(estimate);
+        ReplaceService(api);
+
+        var request = new EstimatePriceRequest(101L, returnTime, 10150);
+
+        // Act
+        using var result = await Client.EstimatePrice(request, Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        var content = result.GetContent();
+        Assert.NotNull(content);
+        Assert.Equal(101L, content.BookingNumber);
+        Assert.Equal(2, content.CalculatedDays);
+        Assert.Equal(150, content.CalculatedKm);
+        Assert.Equal(1650m, content.EstimatedPrice);
+        Assert.Equal("NOK", content.Currency);
+    }
+
+    [Fact]
     public async Task Status_ReturnsOk()
     {
         // Act

@@ -28,7 +28,7 @@ public partial class CarsPage(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Could not load stations: {ex.Message}");
+            snackbar.AddError($"Could not load stations: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 
@@ -49,20 +49,21 @@ public partial class CarsPage(
                 sortDescending: state.SortDirection == SortDirection.Descending,
                 cancellationToken: token);
 
-            if (response.ResponseMessage.IsSuccessStatusCode && response.GetContent() is { } paged)
+            if (response.ResponseMessage.IsSuccessStatusCode && response.GetContent() is { } content)
             {
                 return new TableData<CarResponse>
                 {
-                    TotalItems = paged.TotalCount,
-                    Items = paged.Items
+                    TotalItems = content.TotalCount,
+                    Items = content.Items
                 };
             }
 
-            snackbar.AddWarning("Failed to retrieve fleet data.");
+            var error = ApiExceptionHelper.GetErrorMessage(response.StringContent, "Failed to retrieve fleet data.");
+            snackbar.AddWarning(error);
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error loading fleet: {ex.Message}");
+            snackbar.AddError($"Error loading fleet: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
 
         return new TableData<CarResponse> { TotalItems = 0, Items = [] };
@@ -114,12 +115,12 @@ public partial class CarsPage(
             }
             else
             {
-                snackbar.AddError(response.StringContent ?? "Failed to decommission vehicle.");
+                snackbar.AddError(ApiExceptionHelper.GetErrorMessage(response.StringContent, "Failed to decommission vehicle."));
             }
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error: {ex.Message}");
+            snackbar.AddError($"Error: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 

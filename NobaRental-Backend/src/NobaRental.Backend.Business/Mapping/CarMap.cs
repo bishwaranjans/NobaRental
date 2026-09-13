@@ -1,5 +1,4 @@
 using NobaRental.Backend.Data.Entities;
-using NobaRental.Backend.Data.Entities.Values;
 using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.Domain.Values;
 
@@ -10,9 +9,9 @@ internal static class CarMap
     public static Car Map(this CarEntity entity) =>
         new(
             RegistrationNumber: entity.RegistrationNumber,
-            Category: (CarCategory)entity.Category,
+            Category: entity.Category.ToDomain(),
             CurrentMeterReadingKm: entity.CurrentMeterReadingKm,
-            Status: (CarStatus)entity.Status,
+            Status: entity.Status.ToDomain(),
             CurrentStationCode: entity.CurrentStationCode,
             IsDeleted: entity.IsDeleted,
             RowVersion: entity.RowVersion);
@@ -26,9 +25,9 @@ internal static class CarMap
         new()
         {
             RegistrationNumber = registrationNumber.Trim().ToUpperInvariant(),
-            Category = (CarCategoryValue)category,
+            Category = category.ToEntity(),
             CurrentMeterReadingKm = initialMeterReadingKm,
-            Status = (CarStatusValue)status,
+            Status = status.ToEntity(),
             CurrentStationCode = stationCode.Trim().ToUpperInvariant(),
         };
 }

@@ -20,5 +20,4 @@ public sealed record RentalBooking(
     decimal? TotalPrice,
     string Currency,
     RentalStatus Status,
-    RentalPriceBreakdown? PriceBreakdown = null,
     byte[]? RowVersion = null);

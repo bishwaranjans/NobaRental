@@ -15,15 +15,11 @@ public class RentalBookingEntity : AuditableEntity
 
     public required string PickupStationCode { get; set; }
 
-    public StationEntity? PickupStation { get; set; }
-
     public DateTimeOffset PickupDateTime { get; set; }
 
     public long PickupMeterReadingKm { get; set; }
 
     public string? ReturnStationCode { get; set; }
-
-    public StationEntity? ReturnStation { get; set; }
 
     public DateTimeOffset? ReturnDateTime { get; set; }
 
@@ -32,10 +28,6 @@ public class RentalBookingEntity : AuditableEntity
     public decimal BaseDayRental { get; set; }
 
     public decimal BaseKmPrice { get; set; }
-
-    public int? CalculatedDays { get; set; }
-
-    public long? CalculatedKm { get; set; }
 
     public decimal? TotalPrice { get; set; }
 
@@ -46,4 +38,8 @@ public class RentalBookingEntity : AuditableEntity
     public byte[] RowVersion { get; set; } = [];
 
     public CarEntity? Car { get; set; }
+
+    public StationEntity? PickupStation { get; set; }
+
+    public StationEntity? ReturnStation { get; set; }
 }

@@ -30,7 +30,7 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         var normalizedStation = pickupStationCode.Trim().ToUpperInvariant();
 
         var station = await ctx.Stations.SingleOrDefaultAsync(s => s.Code == normalizedStation, cancellationToken);
-        if (station is null || !station.IsActive)
+        if (station?.IsActive != true)
         {
             throw new InvalidRentalOperationException($"Pickup station '{normalizedStation}' does not exist or is inactive.");
         }
@@ -69,7 +69,7 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
 
         var normalizedStation = returnStationCode.Trim().ToUpperInvariant();
         var station = await ctx.Stations.SingleOrDefaultAsync(s => s.Code == normalizedStation, cancellationToken);
-        if (station is null || !station.IsActive)
+        if (station?.IsActive != true)
         {
             throw new InvalidRentalOperationException($"Return station '{normalizedStation}' does not exist or is inactive.");
         }
@@ -81,12 +81,12 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         if (entity.Status == RentalStatusValue.Completed)
             throw new InvalidRentalOperationException($"Booking '{bookingNumber}' has already been returned and completed.");
 
-        if (rowVersion is not null && rowVersion.Length > 0)
+        if (rowVersion?.Length > 0)
         {
             ctx.Entry(entity).Property(x => x.RowVersion).OriginalValue = rowVersion;
         }
 
-        var priceBreakdown = CalculateReturnValues(entity, returnStationCode, returnDateTime, returnMeterReadingKm);
+        CalculateReturnValues(entity, normalizedStation, returnDateTime, returnMeterReadingKm);
 
         var car = await ctx.Cars.FirstOrDefaultAsync(x => x.RegistrationNumber == entity.RegistrationNumber, cancellationToken);
         if (car is not null)
@@ -105,7 +105,7 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             throw new RentalConcurrencyException($"Booking '{bookingNumber}' was modified by another operation.", ex);
         }
 
-        return entity.Map(priceBreakdown);
+        return entity.Map();
     }
 
     public async Task<RentalBooking?> GetBookingByNumber(long bookingNumber, CancellationToken cancellationToken = default)
@@ -155,7 +155,8 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
 
         if (status.HasValue)
         {
-            query = query.Where(b => b.Status == (RentalStatusValue)status.Value);
+            var statusVal = status.Value.ToEntity();
+            query = query.Where(b => b.Status == statusVal);
         }
 
         query = ApplyBookingSorting(query, sortBy, sortDescending);
@@ -167,7 +168,7 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         var items = await query
             .Skip((page - 1) * size)
             .Take(size)
-            .Select(b => b.Map(null))
+            .Select(b => b.Map())
             .ToListAsync(cancellationToken);
 
         return new PagedResult<RentalBooking>(items, totalCount, page, size);
@@ -182,6 +183,35 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             .ToListAsync(cancellationToken);
 
         return entities.ConvertAll(x => x.Map());
+    }
+
+    public async Task<RentalPriceEstimate> EstimatePrice(
+        long bookingNumber,
+        DateTimeOffset returnDateTime,
+        long returnMeterReadingKm,
+        CancellationToken cancellationToken = default)
+    {
+        var entity = await ctx.RentalBookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.BookingNumber == bookingNumber, cancellationToken)
+            ?? throw new BookingNotFoundException(bookingNumber);
+
+        var billedDays = RentalDurationCalculator.CalculateBilledDays(entity.PickupDateTime, returnDateTime);
+        var drivenKm = RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, returnMeterReadingKm);
+
+        var price = RentalPriceCalculator.CalculatePrice(
+            category: entity.Category.ToDomain(),
+            baseDayRental: entity.BaseDayRental,
+            baseKmPrice: entity.BaseKmPrice,
+            numberOfDays: billedDays,
+            numberOfKm: drivenKm);
+
+        return new RentalPriceEstimate(
+            BookingNumber: bookingNumber,
+            CalculatedDays: billedDays,
+            CalculatedKm: drivenKm,
+            EstimatedPrice: price,
+            Currency: entity.Currency);
     }
 
     private static void ValidatePickupArguments(string reg, string ssn, string station, long meter, decimal dayPrice, decimal kmPrice)
@@ -202,7 +232,7 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         if (car.Status != CarStatusValue.Available)
             throw new InvalidRentalOperationException($"Car '{reg}' is not available for rental (current status: {car.Status}).");
 
-        if (car.Category != (CarCategoryValue)category)
+        if (car.Category != category.ToEntity())
             throw new InvalidRentalOperationException($"Car '{reg}' category '{car.Category}' does not match requested category '{category}'.");
 
         if (!string.Equals(car.CurrentStationCode, station, StringComparison.OrdinalIgnoreCase))
@@ -212,27 +242,23 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             throw new InvalidRentalOperationException($"Pickup meter reading ({meter} km) cannot be less than car's current meter reading ({car.CurrentMeterReadingKm} km).");
     }
 
-    private static RentalPriceBreakdown CalculateReturnValues(RentalBookingEntity entity, string returnStation, DateTimeOffset returnDate, long returnMeter)
+    private static void CalculateReturnValues(RentalBookingEntity entity, string returnStation, DateTimeOffset returnDate, long returnMeter)
     {
         var billedDays = RentalDurationCalculator.CalculateBilledDays(entity.PickupDateTime, returnDate);
         var drivenKm = RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, returnMeter);
 
-        var priceBreakdown = RentalPriceCalculator.Calculate(
-            category: (CarCategory)entity.Category,
+        var totalPrice = RentalPriceCalculator.CalculatePrice(
+            category: entity.Category.ToDomain(),
             baseDayRental: entity.BaseDayRental,
             baseKmPrice: entity.BaseKmPrice,
             numberOfDays: billedDays,
             numberOfKm: drivenKm);
 
-        entity.ReturnStationCode = returnStation.Trim().ToUpperInvariant();
+        entity.ReturnStationCode = returnStation;
         entity.ReturnDateTime = returnDate;
         entity.ReturnMeterReadingKm = returnMeter;
-        entity.CalculatedDays = billedDays;
-        entity.CalculatedKm = drivenKm;
-        entity.TotalPrice = priceBreakdown.TotalPrice;
+        entity.TotalPrice = totalPrice;
         entity.Status = RentalStatusValue.Completed;
-
-        return priceBreakdown;
     }
 
     private static IQueryable<RentalBookingEntity> ApplyBookingSorting(IQueryable<RentalBookingEntity> query, string? sortBy, bool sortDescending) =>
