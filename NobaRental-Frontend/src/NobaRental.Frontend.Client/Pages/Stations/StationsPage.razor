@@ -33,7 +33,9 @@
             <ToolBarContent>
                 <MudText Typo="Typo.h6">Rental Stations</MudText>
                 <MudSpacer />
-                <MudSwitch @bind-Value="IncludeInactive"
+                <MudSwitch T="bool"
+                           Value="IncludeInactive"
+                           ValueChanged="OnIncludeInactiveChanged"
                            Label="Include Inactive"
                            Color="Color.Primary" />
             </ToolBarContent>

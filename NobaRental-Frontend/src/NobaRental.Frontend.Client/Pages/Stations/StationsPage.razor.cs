@@ -13,41 +13,36 @@ public partial class StationsPage(
 {
     protected List<StationResponse> Stations = [];
     protected bool IsLoading = true;
-    private bool _includeInactive;
-
-    protected bool IncludeInactive
-    {
-        get => _includeInactive;
-        set
-        {
-            if (_includeInactive != value)
-            {
-                _includeInactive = value;
-                _ = LoadStations();
-            }
-        }
-    }
+    protected bool IncludeInactive;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadStations();
     }
 
+    protected async Task OnIncludeInactiveChanged(bool value)
+    {
+        IncludeInactive = value;
+        await LoadStations();
+    }
+
     protected async Task LoadStations()
     {
         IsLoading = true;
+        StateHasChanged();
         try
         {
-            var list = await stationApiClient.GetAllStationsAsync(_includeInactive);
+            var list = await stationApiClient.GetAllStationsAsync(IncludeInactive);
             Stations = list.ToList();
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error loading stations: {ex.Message}");
+            snackbar.AddError($"Error loading stations: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
         finally
         {
             IsLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -113,7 +108,7 @@ public partial class StationsPage(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Could not delete station: {ex.Message}");
+            snackbar.AddError($"Could not delete station: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 }

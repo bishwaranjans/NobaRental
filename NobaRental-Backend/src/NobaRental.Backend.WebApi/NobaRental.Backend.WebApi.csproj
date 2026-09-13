@@ -25,4 +25,8 @@
     <ProjectReference Include="..\NobaRental.Backend.WebApi.Client\NobaRental.Backend.WebApi.Client.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="NobaRental.Backend.WebApi.Client.Test" />
+  </ItemGroup>
+
 </Project>

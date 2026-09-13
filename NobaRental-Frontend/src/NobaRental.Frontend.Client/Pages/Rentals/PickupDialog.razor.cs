@@ -60,7 +60,7 @@ public partial class PickupDialog(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error loading stations: {ex.Message}");
+            snackbar.AddError($"Error loading stations: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 
@@ -91,7 +91,7 @@ public partial class PickupDialog(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error loading available cars: {ex.Message}");
+            snackbar.AddError($"Error loading available cars: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 
@@ -184,13 +184,13 @@ public partial class PickupDialog(
             }
             else
             {
-                var error = response.StringContent ?? "Failed to register pickup.";
+                var error = ApiExceptionHelper.GetErrorMessage(response.StringContent, "Failed to register pickup.");
                 snackbar.AddError(error);
             }
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error: {ex.Message}");
+            snackbar.AddError($"Error: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
         finally
         {

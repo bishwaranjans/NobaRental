@@ -1,6 +1,5 @@
 using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.WebApi.Client.Models.Response;
-using NobaRental.Backend.WebApi.Client.Models.Values;
 
 namespace NobaRental.Backend.WebApi.Mapping;
 
@@ -11,7 +10,7 @@ internal static class RentalBookingMap
             BookingNumber: domain.BookingNumber,
             RegistrationNumber: domain.RegistrationNumber,
             CustomerSsn: domain.CustomerSsn,
-            Category: (CarCategoryDto)domain.Category,
+            Category: domain.Category.MapToResponse(),
             PickupStationCode: domain.PickupStationCode,
             PickupDateTime: domain.PickupDateTime,
             PickupMeterReadingKm: domain.PickupMeterReadingKm,
@@ -24,7 +23,7 @@ internal static class RentalBookingMap
             CalculatedKm: domain.CalculatedKm,
             TotalPrice: domain.TotalPrice,
             Currency: domain.Currency,
-            Status: (RentalStatusDto)domain.Status,
+            Status: domain.Status.MapToResponse(),
             RowVersion: domain.RowVersion);
 
     public static IReadOnlyCollection<RentalBookingResponse> MapToResponse(this IReadOnlyCollection<RentalBooking> items) =>

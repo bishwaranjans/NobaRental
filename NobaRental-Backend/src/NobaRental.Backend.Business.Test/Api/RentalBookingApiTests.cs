@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NobaRental.Backend.Business.Api;
+using NobaRental.Backend.Business.Mapping;
 using NobaRental.Backend.Data;
 using NobaRental.Backend.Data.Entities;
 using NobaRental.Backend.Data.Entities.Values;
@@ -38,7 +39,7 @@ public sealed class RentalBookingApiTests : IDisposable
             _ctx.Cars.Add(new CarEntity
             {
                 RegistrationNumber = normalized,
-                Category = (CarCategoryValue)category,
+                Category = category.ToEntity(),
                 CurrentMeterReadingKm = meterReading,
                 CurrentStationCode = stationCode,
                 Status = CarStatusValue.Available
@@ -558,5 +559,50 @@ public sealed class RentalBookingApiTests : IDisposable
         var carAfterReturn = await _ctx.Cars.SingleAsync(c => c.RegistrationNumber == "LIFECYCLE_01", Token);
         Assert.Equal(CarStatusValue.Available, carAfterReturn.Status);
         Assert.Equal(12500, carAfterReturn.CurrentMeterReadingKm);
+    }
+
+    [Fact]
+    public async Task EstimatePrice_ActiveBooking_ReturnsCalculatedEstimate()
+    {
+        EnsureCar("EST_01", CarCategory.Combi, 10000);
+        var pickupTime = new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero);
+
+        var booking = await _api.RegisterPickup(
+            registrationNumber: "EST_01",
+            customerSsn: "12345678901",
+            category: CarCategory.Combi,
+            pickupStationCode: "OSL",
+            pickupDateTime: pickupTime,
+            pickupMeterReadingKm: 10000,
+            baseDayRental: 600m,
+            baseKmPrice: 5m,
+            cancellationToken: Token);
+
+        // 2 days later, 100 km driven
+        // Combi formula: (600 * 2 * 1.3) + (5 * 100) = 1560 + 500 = 2060
+        var returnTime = pickupTime.AddDays(2);
+        var estimate = await _api.EstimatePrice(
+            bookingNumber: booking.BookingNumber,
+            returnDateTime: returnTime,
+            returnMeterReadingKm: 10100,
+            cancellationToken: Token);
+
+        Assert.Equal(booking.BookingNumber, estimate.BookingNumber);
+        Assert.Equal(2, estimate.CalculatedDays);
+        Assert.Equal(100, estimate.CalculatedKm);
+        Assert.Equal(2060m, estimate.EstimatedPrice);
+        Assert.Equal("NOK", estimate.Currency);
+    }
+
+    [Fact]
+    public async Task EstimatePrice_InvalidBookingNumber_ThrowsBookingNotFoundException()
+    {
+        var returnTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
+        await Assert.ThrowsAsync<BookingNotFoundException>(() =>
+            _api.EstimatePrice(
+                bookingNumber: 999999,
+                returnDateTime: returnTime,
+                returnMeterReadingKm: 1000,
+                cancellationToken: Token));
     }
 }

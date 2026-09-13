@@ -12,8 +12,6 @@ namespace NobaRental.Backend.Business.Api;
 
 public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 {
-    private readonly NobaRentalDbContext _dbContext = dbContext;
-
     public async Task<Car> RegisterCar(
         string registrationNumber,
         CarCategory category,
@@ -32,15 +30,15 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
         var normalizedStation = stationCode.Trim().ToUpperInvariant();
 
-        var station = await _dbContext.Stations
+        var station = await dbContext.Stations
             .SingleOrDefaultAsync(s => s.Code == normalizedStation, cancellationToken);
 
-        if (station is null || !station.IsActive)
+        if (station?.IsActive != true)
         {
             throw new InvalidRentalOperationException($"Station '{normalizedStation}' does not exist or is inactive.");
         }
 
-        var existing = await _dbContext.Cars
+        var existing = await dbContext.Cars
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(c => c.RegistrationNumber == normalizedReg, cancellationToken);
 
@@ -50,20 +48,22 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
             {
                 existing.IsDeleted = false;
                 existing.DeletedAt = null;
-                existing.Category = (CarCategoryValue)category;
+                existing.Category = category.ToEntity();
                 existing.CurrentMeterReadingKm = initialMeterReadingKm;
                 existing.CurrentStationCode = normalizedStation;
                 existing.Status = CarStatusValue.Available;
-                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                await dbContext.SaveChangesAsync(cancellationToken);
+
                 return existing.Map();
             }
 
             throw new InvalidRentalOperationException($"Car with registration number '{normalizedReg}' already exists.");
         }
 
-        var entity = CarMap.MapToEntity(normalizedReg, category, initialMeterReadingKm, normalizedStation, CarStatus.Available);
-        _dbContext.Cars.Add(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        var entity = CarMap.MapToEntity(normalizedReg, category, initialMeterReadingKm, normalizedStation, status: CarStatus.Available);
+        await dbContext.Cars.AddAsync(entity, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         return entity.Map();
     }
@@ -73,7 +73,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         ArgumentException.ThrowIfNullOrWhiteSpace(registrationNumber);
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
 
-        var car = await _dbContext.Cars
+        var car = await dbContext.Cars
             .SingleOrDefaultAsync(c => c.RegistrationNumber == normalizedReg, cancellationToken);
 
         if (car is null)
@@ -87,18 +87,18 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         }
 
         car.Status = CarStatusValue.Decommissioned;
-        _dbContext.Cars.Remove(car);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        dbContext.Cars.Remove(car);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Car>> GetAllCars(CancellationToken cancellationToken = default)
     {
-        var entities = await _dbContext.Cars
+        var entities = await dbContext.Cars
             .AsNoTracking()
             .OrderBy(c => c.RegistrationNumber)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(e => e.Map()).ToList();
+        return entities.ConvertAll(e => e.Map());
     }
 
     public async Task<PagedResult<Car>> GetCars(
@@ -111,7 +111,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         bool sortDescending = false,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Cars.AsNoTracking();
+        var query = dbContext.Cars.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -127,7 +127,8 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
         if (status.HasValue)
         {
-            query = query.Where(c => c.Status == (CarStatusValue)status.Value);
+            var statusVal = status.Value.ToEntity();
+            query = query.Where(c => c.Status == statusVal);
         }
 
         query = ApplySorting(query, sortBy, sortDescending);
@@ -150,7 +151,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         CarCategory? category = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Cars
+        var query = dbContext.Cars
             .AsNoTracking()
             .Where(c => c.Status == CarStatusValue.Available);
 
@@ -162,7 +163,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
         if (category.HasValue)
         {
-            var catVal = (CarCategoryValue)category.Value;
+            var catVal = category.Value.ToEntity();
             query = query.Where(c => c.Category == catVal);
         }
 
@@ -170,7 +171,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
             .OrderBy(c => c.RegistrationNumber)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(e => e.Map()).ToList();
+        return entities.ConvertAll(e => e.Map());
     }
 
     public async Task<Car?> GetCarByRegistrationNumber(string registrationNumber, CancellationToken cancellationToken = default)
@@ -179,7 +180,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
 
-        var entity = await _dbContext.Cars
+        var entity = await dbContext.Cars
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.RegistrationNumber == normalizedReg, cancellationToken);
 

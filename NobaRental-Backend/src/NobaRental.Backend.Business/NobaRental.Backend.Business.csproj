@@ -9,4 +9,8 @@
     <ProjectReference Include="..\NobaRental.Backend.Domain\NobaRental.Backend.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="NobaRental.Backend.Business.Test" />
+  </ItemGroup>
+
 </Project>

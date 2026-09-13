@@ -1,3 +1,4 @@
+using NobaRental.Backend.Business.Pricing;
 using NobaRental.Backend.Data.Entities;
 using NobaRental.Backend.Data.Entities.Values;
 using NobaRental.Backend.Domain.Models;
@@ -7,12 +8,12 @@ namespace NobaRental.Backend.Business.Mapping;
 
 internal static class RentalBookingMap
 {
-    public static RentalBooking Map(this RentalBookingEntity entity, RentalPriceBreakdown? priceBreakdown = null) =>
+    public static RentalBooking Map(this RentalBookingEntity entity) =>
         new(
             BookingNumber: entity.BookingNumber,
             RegistrationNumber: entity.RegistrationNumber,
             CustomerSsn: entity.CustomerSsn,
-            Category: (CarCategory)entity.Category,
+            Category: entity.Category.ToDomain(),
             PickupStationCode: entity.PickupStationCode,
             PickupDateTime: entity.PickupDateTime,
             PickupMeterReadingKm: entity.PickupMeterReadingKm,
@@ -21,12 +22,15 @@ internal static class RentalBookingMap
             ReturnMeterReadingKm: entity.ReturnMeterReadingKm,
             BaseDayRental: entity.BaseDayRental,
             BaseKmPrice: entity.BaseKmPrice,
-            CalculatedDays: entity.CalculatedDays,
-            CalculatedKm: entity.CalculatedKm,
+            CalculatedDays: entity.ReturnDateTime.HasValue
+                ? RentalDurationCalculator.CalculateBilledDays(entity.PickupDateTime, entity.ReturnDateTime.Value)
+                : null,
+            CalculatedKm: entity.ReturnMeterReadingKm.HasValue
+                ? RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, entity.ReturnMeterReadingKm.Value)
+                : null,
             TotalPrice: entity.TotalPrice,
             Currency: entity.Currency,
-            Status: (RentalStatus)entity.Status,
-            PriceBreakdown: priceBreakdown,
+            Status: entity.Status.ToDomain(),
             RowVersion: entity.RowVersion);
 
     public static RentalBookingEntity MapToEntity(
@@ -43,7 +47,7 @@ internal static class RentalBookingMap
         {
             RegistrationNumber = registrationNumber,
             CustomerSsn = customerSsn,
-            Category = (CarCategoryValue)category,
+            Category = category.ToEntity(),
             PickupStationCode = pickupStationCode.Trim().ToUpperInvariant(),
             PickupDateTime = pickupDateTime,
             PickupMeterReadingKm = pickupMeterReadingKm,

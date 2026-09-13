@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NobaRental.Backend.Domain;
 using NobaRental.Backend.Domain.Exceptions;
-using NobaRental.Backend.Domain.Values;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Client.Models.Values;
@@ -24,7 +23,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
             var result = await rentalBookingApi.RegisterPickup(
                 registrationNumber: request.RegistrationNumber,
                 customerSsn: request.CustomerSsn,
-                category: (CarCategory)request.Category,
+                category: request.Category.MapToDomain(),
                 pickupStationCode: request.PickupStationCode,
                 pickupDateTime: request.PickupDateTime,
                 pickupMeterReadingKm: request.PickupMeterReadingKm,
@@ -142,7 +141,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
         [FromQuery] bool? sortDescending = null,
         CancellationToken cancellationToken = default)
     {
-        var domainStatus = status.HasValue ? (RentalStatus?)status.Value : null;
+        var domainStatus = status.MapToDomain();
         var paged = await rentalBookingApi.GetBookings(
             pageNumber ?? 1,
             pageSize ?? 10,
@@ -162,5 +161,46 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     {
         var bookings = await rentalBookingApi.GetActiveBookings(cancellationToken);
         return Ok(bookings.MapToResponse());
+    }
+
+    [HttpPost("estimate-price")]
+    [ProducesResponseType<EstimatePriceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EstimatePrice([FromBody] EstimatePriceRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var estimate = await rentalBookingApi.EstimatePrice(
+                bookingNumber: request.BookingNumber,
+                returnDateTime: request.ReturnDateTime,
+                returnMeterReadingKm: request.ReturnMeterReadingKm,
+                cancellationToken: cancellationToken);
+
+            return Ok(new EstimatePriceResponse(
+                BookingNumber: estimate.BookingNumber,
+                CalculatedDays: estimate.CalculatedDays,
+                CalculatedKm: estimate.CalculatedKm,
+                EstimatedPrice: estimate.EstimatedPrice,
+                Currency: estimate.Currency));
+        }
+        catch (BookingNotFoundException ex)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Booking Not Found",
+                Detail = ex.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Validation Error",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
     }
 }

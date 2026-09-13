@@ -76,7 +76,7 @@ public partial class StationDialog(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Failed to save station: {ex.Message}");
+            snackbar.AddError($"Failed to save station: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
         finally
         {

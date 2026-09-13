@@ -28,7 +28,7 @@ public partial class RentalsPage(
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Could not load stations: {ex.Message}");
+            snackbar.AddError($"Could not load stations: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
     }
 
@@ -58,11 +58,12 @@ public partial class RentalsPage(
                 };
             }
 
-            snackbar.AddWarning("Failed to retrieve rentals data.");
+            var error = ApiExceptionHelper.GetErrorMessage(response.StringContent, "Failed to retrieve rentals data.");
+            snackbar.AddWarning(error);
         }
         catch (Exception ex)
         {
-            snackbar.AddError($"Error loading rentals: {ex.Message}");
+            snackbar.AddError($"Error loading rentals: {ApiExceptionHelper.GetErrorMessage(ex)}");
         }
 
         return new TableData<RentalBookingResponse> { TotalItems = 0, Items = [] };

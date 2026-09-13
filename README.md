@@ -102,7 +102,7 @@ CarRental/
 │       │   ├── Pricing/RentalPriceCalculator.cs   # Category pricing formulas (in NOK)
 │       │   ├── Pricing/RentalDurationCalculator.cs# Billed days & km delta calculation
 │       │   └── Mapping/                           # Entity <-> Domain mappers (CarMap, StationMap, RentalBookingMap)
-│       ├── NobaRental.Backend.Business.Test/      # Unit tests for domain APIs, pricing & fleet rules (53 tests)
+│       ├── NobaRental.Backend.Business.Test/      # Unit tests for domain APIs, pricing & fleet rules (75 tests)
 │       ├── NobaRental.Backend.Data/               # EF Core persistence
 │       │   ├── Entities/                          # CarEntity, StationEntity, RentalBookingEntity
 │       │   ├── Entities/Common/                   # IAuditableEntity, ISoftDeletable, AuditableEntity, SoftDeletableEntity
@@ -117,15 +117,15 @@ CarRental/
 │       │   ├── Controllers/StationsController.cs  # Station REST API
 │       │   ├── Controllers/RentalBookingsController.cs # Rental REST API
 │       │   ├── Validators/                        # FluentValidation request validators
-│       │   └── Mapping/                           # Domain Models <-> Client Response DTOs
+│       │   └── Mapping/                           # Domain Models <-> Client Response DTOs & Enum Value Mappers
 │       ├── NobaRental.Backend.WebApi.Client/      # Shared Client library
 │       │   ├── ICarApiClient.cs                   # RestEase typed client for cars
 │       │   ├── IStationApiClient.cs               # RestEase typed client for stations
-│       │   ├── IRentalBookingApiClient.cs         # RestEase typed client for rentals
+│       │   ├── IRentalBookingApiClient.cs         # RestEase typed client for rentals & price estimates
 │       │   ├── Models/Request/                    # DTO request records
 │       │   ├── Models/Response/                   # DTO response records & PagedResultResponse<T>
 │       │   └── ServiceCollectionExtensions.cs     # Typed client DI registration
-│       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration tests (17 tests)
+│       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration & enum mapping tests (49 tests)
 ├── NobaRental-Frontend/
 │   └── src/
 │       ├── NobaRental.Frontend.Server/            # Blazor Server host with YARP reverse proxy & NavMenu
@@ -187,23 +187,11 @@ The Aspire dashboard will start and display live status, logs, and endpoints:
 
 ### Step 3: Running Automated Tests
 
-Run the full automated test suite (76 tests) across all layers:
+Run the full automated test suite across all layers:
 
 ```powershell
 dotnet test NobaRental.slnx
 ```
-
-#### Test Suite Breakdown:
-1. **`NobaRental.Backend.Data.Test` (6 tests)**:
-   - Metadata validation (table names, keys, column precision `decimal(18, 2)`, non-unicode strings).
-   - Soft-delete behavior: confirms deleted cars/stations are excluded from default queries, soft-deleted state persists in DB (`IsDeleted = 1`), and `.IgnoreQueryFilters()` retrieves them for auditing.
-2. **`NobaRental.Backend.Business.Test` (53 tests)**:
-   - Pricing algorithms: Small Car, Combi (1.3x day), Truck (1.5x day & km).
-   - Duration calculations (24h ceiling, 1-day minimum).
-   - Station validation, one-way vehicle relocation on return, fleet odometer validation, and station deletion prevention.
-3. **`NobaRental.Backend.WebApi.Client.Test` (17 tests)**:
-   - Integration tests using `WebApplicationFactory<Program>` and RestEase clients (`ICarApiClient`, `IStationApiClient`, `IRentalBookingApiClient`).
-   - Verifies HTTP request/response pipelines, validations, and error codes.
 
 ---
 
@@ -234,6 +222,7 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 |---|---|---|
 | `POST` | `/api/v1/rentals/pickup` | Register vehicle pickup with station, locked rates, and SSN |
 | `POST` | `/api/v1/rentals/return` | Register vehicle return, calculate totals, and relocate vehicle |
+| `POST` | `/api/v1/rentals/estimate-price` | Single Source of Truth: estimate price and duration in advance of return |
 | `GET` | `/api/v1/rentals/{bookingNumber}` | Retrieve specific rental booking by unique booking number |
 | `GET` | `/api/v1/rentals` | Paginated booking records with sorting and filters |
 | `GET` | `/api/v1/rentals/active` | Retrieve currently active ongoing rentals |
@@ -243,6 +232,6 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 
 ## 6. CI/CD Pipelines & Cloud Infrastructure (Build & Infra)
 
-- **`build/azure-pipelines-pr.yaml`**: Strict PR validation running build with `TreatWarningsAsErrors`, all 76 unit/integration tests, and Bicep syntax validation.
+- **`build/azure-pipelines-pr.yaml`**: Strict PR validation running build with `TreatWarningsAsErrors`, all 130 unit/integration tests, and Bicep syntax validation.
 - **`build/azure-pipelines-ci.yaml`**: Multi-stage release pipeline for building, bundling migrations (`efbundle`), deploying infrastructure via Bicep, executing database migrations, and deploying services to Azure App Service with slot swapping.
 - **`infra/main.bicep`**: Declarative Infrastructure-as-Code for Azure App Service (Linux), Azure SQL, Azure Key Vault (Managed Identity references), and Application Insights.

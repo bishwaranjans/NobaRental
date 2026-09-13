@@ -38,4 +38,8 @@ public interface IRentalBookingApiClient
     [Get("health")]
     [AllowAnyStatusCode]
     Task<Response<string>> Status(CancellationToken cancellationToken = default);
+
+    [Post("api/v1/rentals/estimate-price")]
+    [AllowAnyStatusCode]
+    Task<Response<EstimatePriceResponse>> EstimatePrice([Body] EstimatePriceRequest request, CancellationToken cancellationToken = default);
 }

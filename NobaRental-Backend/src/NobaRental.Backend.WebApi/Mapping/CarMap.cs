@@ -1,6 +1,5 @@
 using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.WebApi.Client.Models.Response;
-using NobaRental.Backend.WebApi.Client.Models.Values;
 
 namespace NobaRental.Backend.WebApi.Mapping;
 
@@ -9,9 +8,9 @@ internal static class CarMap
     public static CarResponse MapToResponse(this Car domain) =>
         new(
             RegistrationNumber: domain.RegistrationNumber,
-            Category: (CarCategoryDto)domain.Category,
+            Category: domain.Category.MapToResponse(),
             CurrentMeterReadingKm: domain.CurrentMeterReadingKm,
-            Status: (CarStatusDto)domain.Status,
+            Status: domain.Status.MapToResponse(),
             CurrentStationCode: domain.CurrentStationCode,
             RowVersion: domain.RowVersion);
 

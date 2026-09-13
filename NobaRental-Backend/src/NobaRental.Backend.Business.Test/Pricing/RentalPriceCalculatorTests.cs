@@ -6,7 +6,7 @@ namespace NobaRental.Backend.Business.Test.Pricing;
 public class RentalPriceCalculatorTests
 {
     [Fact]
-    public void Calculate_SmallCar_PriceDependsOnlyOnDays()
+    public void CalculatePrice_SmallCar_PriceDependsOnlyOnDays()
     {
         // Arrange
         const decimal baseDayRental = 500m;
@@ -18,7 +18,7 @@ public class RentalPriceCalculatorTests
         const decimal expectedTotal = 1500m; // 500 * 3 = 1500
 
         // Act
-        var result = RentalPriceCalculator.Calculate(
+        var price = RentalPriceCalculator.CalculatePrice(
             CarCategory.SmallCar,
             baseDayRental,
             baseKmPrice,
@@ -26,16 +26,11 @@ public class RentalPriceCalculatorTests
             numberOfKm);
 
         // Assert
-        Assert.Equal(expectedTotal, result.TotalPrice);
-        Assert.Equal(expectedTotal, result.DayRentalCost);
-        Assert.Equal(0m, result.KmRentalCost);
-        Assert.Equal("NOK", result.Currency);
-        Assert.Equal(numberOfDays, result.NumberOfDays);
-        Assert.Equal(numberOfKm, result.NumberOfKm);
+        Assert.Equal(expectedTotal, price);
     }
 
     [Fact]
-    public void Calculate_Combi_AppliesCombiMultipliers()
+    public void CalculatePrice_Combi_AppliesCombiFormula()
     {
         // Arrange
         const decimal baseDayRental = 600m;
@@ -47,12 +42,10 @@ public class RentalPriceCalculatorTests
         // Day cost: 600 * 2 * 1.3 = 1560
         // Km cost: 5 * 100 = 500
         // Total: 2060
-        const decimal expectedDayCost = 1560m;
-        const decimal expectedKmCost = 500m;
         const decimal expectedTotal = 2060m;
 
         // Act
-        var result = RentalPriceCalculator.Calculate(
+        var price = RentalPriceCalculator.CalculatePrice(
             CarCategory.Combi,
             baseDayRental,
             baseKmPrice,
@@ -60,14 +53,11 @@ public class RentalPriceCalculatorTests
             numberOfKm);
 
         // Assert
-        Assert.Equal(expectedDayCost, result.DayRentalCost);
-        Assert.Equal(expectedKmCost, result.KmRentalCost);
-        Assert.Equal(expectedTotal, result.TotalPrice);
-        Assert.Equal("NOK", result.Currency);
+        Assert.Equal(expectedTotal, price);
     }
 
     [Fact]
-    public void Calculate_Truck_AppliesTruckMultipliers()
+    public void CalculatePrice_Truck_AppliesTruckFormula()
     {
         // Arrange
         const decimal baseDayRental = 800m;
@@ -79,12 +69,10 @@ public class RentalPriceCalculatorTests
         // Day cost: 800 * 2 * 1.5 = 2400
         // Km cost: 8 * 100 * 1.5 = 1200
         // Total: 3600
-        const decimal expectedDayCost = 2400m;
-        const decimal expectedKmCost = 1200m;
         const decimal expectedTotal = 3600m;
 
         // Act
-        var result = RentalPriceCalculator.Calculate(
+        var price = RentalPriceCalculator.CalculatePrice(
             CarCategory.Truck,
             baseDayRental,
             baseKmPrice,
@@ -92,14 +80,11 @@ public class RentalPriceCalculatorTests
             numberOfKm);
 
         // Assert
-        Assert.Equal(expectedDayCost, result.DayRentalCost);
-        Assert.Equal(expectedKmCost, result.KmRentalCost);
-        Assert.Equal(expectedTotal, result.TotalPrice);
-        Assert.Equal("NOK", result.Currency);
+        Assert.Equal(expectedTotal, price);
     }
 
     [Fact]
-    public void Calculate_CombiWithZeroKm_ReturnsOnlyDayRentalCost()
+    public void CalculatePrice_CombiWithZeroKm_ReturnsOnlyDayRentalCost()
     {
         // Arrange
         const decimal baseDayRental = 400m;
@@ -111,7 +96,7 @@ public class RentalPriceCalculatorTests
         const decimal expectedTotal = 520m;
 
         // Act
-        var result = RentalPriceCalculator.Calculate(
+        var price = RentalPriceCalculator.CalculatePrice(
             CarCategory.Combi,
             baseDayRental,
             baseKmPrice,
@@ -119,28 +104,27 @@ public class RentalPriceCalculatorTests
             numberOfKm);
 
         // Assert
-        Assert.Equal(expectedTotal, result.TotalPrice);
-        Assert.Equal(0m, result.KmRentalCost);
+        Assert.Equal(expectedTotal, price);
     }
 
     [Fact]
-    public void Calculate_NegativeDays_ThrowsArgumentOutOfRangeException()
+    public void CalculatePrice_NegativeDays_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            RentalPriceCalculator.Calculate(CarCategory.SmallCar, 500m, 10m, -1, 100));
+            RentalPriceCalculator.CalculatePrice(CarCategory.SmallCar, 500m, 10m, -1, 100));
     }
 
     [Fact]
-    public void Calculate_ZeroDays_ThrowsArgumentOutOfRangeException()
+    public void CalculatePrice_ZeroDays_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            RentalPriceCalculator.Calculate(CarCategory.SmallCar, 500m, 10m, 0, 100));
+            RentalPriceCalculator.CalculatePrice(CarCategory.SmallCar, 500m, 10m, 0, 100));
     }
 
     [Fact]
-    public void Calculate_NegativeBaseDayRental_ThrowsArgumentOutOfRangeException()
+    public void CalculatePrice_NegativeBaseDayRental_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            RentalPriceCalculator.Calculate(CarCategory.SmallCar, -100m, 10m, 1, 100));
+            RentalPriceCalculator.CalculatePrice(CarCategory.SmallCar, -100m, 10m, 1, 100));
     }
 }
