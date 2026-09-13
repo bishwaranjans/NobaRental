@@ -7,7 +7,7 @@ using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Client.Models.Values;
 using NobaRental.Backend.WebApi.Mapping;
-
+using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.WebApi.Helpers;
 
 namespace NobaRental.Backend.WebApi.Controllers;
@@ -34,6 +34,55 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
 
         ETagHelper.SetETag(Response, result.RowVersion);
         return CreatedAtAction(nameof(GetByRegistrationNumber), new { registrationNumber = result.RegistrationNumber }, result.MapToResponse());
+    }
+
+    [HttpPut("{registrationNumber}/tariff")]
+    [Authorize(Policy = AuthConstants.Policies.FleetManage)]
+    [ProducesResponseType<CarResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    public async Task<IActionResult> UpdateTariff(
+        string registrationNumber,
+        [FromBody] UpdateCarTariffRequest request,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        CancellationToken cancellationToken)
+    {
+        var rowVersion = ResolveRowVersion(ifMatch, request.RowVersion, out var hasIfMatch);
+
+        Car result;
+        try
+        {
+            result = await carFleetApi.UpdateCarTariff(
+                registrationNumber: registrationNumber,
+                baseDayRental: request.BaseDayRental,
+                baseKmPrice: request.BaseKmPrice,
+                rowVersion: rowVersion,
+                cancellationToken: cancellationToken);
+        }
+        catch (RentalConcurrencyException) when (hasIfMatch)
+        {
+            throw new PreconditionFailedException($"Car '{registrationNumber}' was modified by another operation.");
+        }
+
+        ETagHelper.SetETag(Response, result.RowVersion);
+        return Ok(result.MapToResponse());
+    }
+
+    private static byte[]? ResolveRowVersion(string? ifMatch, byte[]? bodyRowVersion, out bool hasIfMatch)
+    {
+        hasIfMatch = !string.IsNullOrWhiteSpace(ifMatch);
+        if (!hasIfMatch)
+        {
+            return bodyRowVersion;
+        }
+
+        if (!ETagHelper.TryParseETag(ifMatch, out var parsed))
+        {
+            throw new PreconditionFailedException("The provided If-Match header is invalid.");
+        }
+
+        return parsed;
     }
 
     [HttpGet]

@@ -116,6 +116,54 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<Car> UpdateCarTariff(
+        string registrationNumber,
+        decimal baseDayRental,
+        decimal baseKmPrice = 0m,
+        byte[]? rowVersion = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(registrationNumber);
+        if (baseDayRental <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(baseDayRental), "Base day rental must be greater than zero.");
+        }
+
+        if (baseKmPrice < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(baseKmPrice), "Base kilometer price cannot be negative.");
+        }
+
+        var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
+        var car = await dbContext.Cars
+            .SingleOrDefaultAsync(c => c.RegistrationNumber == normalizedReg, cancellationToken)
+            ?? throw new InvalidRentalOperationException($"Car '{normalizedReg}' is not registered in the fleet.");
+
+        if (car.Category == CarCategoryValue.SmallCar)
+        {
+            baseKmPrice = 0m;
+        }
+
+        if (rowVersion?.Length > 0)
+        {
+            dbContext.Entry(car).Property(x => x.RowVersion).OriginalValue = rowVersion;
+        }
+
+        car.BaseDayRental = baseDayRental;
+        car.BaseKmPrice = baseKmPrice;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new RentalConcurrencyException($"Car '{normalizedReg}' was modified by another operation.", ex);
+        }
+
+        return car.Map();
+    }
+
     public async Task<IReadOnlyCollection<Car>> GetAllCars(CancellationToken cancellationToken = default)
     {
         var entities = await dbContext.Cars

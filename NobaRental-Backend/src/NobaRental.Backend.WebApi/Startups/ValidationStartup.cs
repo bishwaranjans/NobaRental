@@ -12,6 +12,7 @@ internal static class ValidationStartup
         services.AddScoped<IValidator<RegisterPickupRequest>, RegisterPickupRequestValidator>();
         services.AddScoped<IValidator<ReturnRentalRequest>, ReturnRentalRequestValidator>();
         services.AddScoped<IValidator<RegisterCarRequest>, RegisterCarRequestValidator>();
+        services.AddScoped<IValidator<UpdateCarTariffRequest>, UpdateCarTariffRequestValidator>();
         services.AddScoped<IValidator<CreateStationRequest>, CreateStationRequestValidator>();
         services.AddScoped<IValidator<UpdateStationRequest>, UpdateStationRequestValidator>();
         services.AddFluentValidationAutoValidation();

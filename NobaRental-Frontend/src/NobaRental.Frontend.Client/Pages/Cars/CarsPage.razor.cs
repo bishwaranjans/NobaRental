@@ -142,6 +142,29 @@ public partial class CarsPage(
         }
     }
 
+    protected async Task OpenEditTariffDialog(CarResponse car)
+    {
+        var parameters = new DialogParameters<EditTariffDialog>
+        {
+            { x => x.Car, car }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await dialogService.ShowAsync<EditTariffDialog>("Edit Vehicle Tariff", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CarResponse })
+        {
+            await ReloadTable();
+        }
+    }
+
     protected static Color GetCategoryColor(CarCategoryDto category) => category switch
     {
         CarCategoryDto.SmallCar => Color.Primary,

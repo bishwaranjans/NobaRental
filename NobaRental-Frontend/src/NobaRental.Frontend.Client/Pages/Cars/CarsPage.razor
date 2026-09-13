@@ -118,6 +118,15 @@
                     @(context.Category == CarCategoryDto.SmallCar ? "0.00 NOK (incl.)" : $"{context.BaseKmPrice:N2} NOK")
                 </MudTd>
                 <MudTd DataLabel="Actions" Style="text-align: right">
+                    @if (context.Status != CarStatusDto.Decommissioned)
+                    {
+                        <MudTooltip Text="Edit commercial tariff">
+                            <MudIconButton Icon="@Icons.Material.Filled.PriceChange"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           OnClick="@(() => OpenEditTariffDialog(context))" />
+                        </MudTooltip>
+                    }
                     @if (context.Status != CarStatusDto.Rented)
                     {
                         <MudTooltip Text="Decommission vehicle">

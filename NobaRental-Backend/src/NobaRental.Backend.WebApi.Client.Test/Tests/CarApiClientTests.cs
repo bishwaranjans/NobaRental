@@ -1,4 +1,5 @@
 using NobaRental.Backend.Domain;
+using NobaRental.Backend.Domain.Exceptions;
 using NobaRental.Backend.Domain.Models;
 using NobaRental.Backend.Domain.Values;
 using NobaRental.Backend.WebApi.Client.Models.Request;
@@ -167,5 +168,54 @@ public sealed class CarApiClientTests : TestWebHost
 
         // Assert
         Assert.Equal(System.Net.HttpStatusCode.NotModified, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_Success()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        byte[] rowVersion = [1, 2, 3, 4];
+        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL", BaseDayRental: 650m, BaseKmPrice: 0m, RowVersion: rowVersion);
+
+        api.UpdateCarTariff("EV12345", 650m, 0m, Arg.Any<byte[]?>(), Arg.Any<CancellationToken>())
+           .Returns(domainCar);
+
+        ReplaceService(api);
+
+        var request = new UpdateCarTariffRequest(650m, 0m, rowVersion);
+        var ifMatch = $"\"{Convert.ToBase64String(rowVersion)}\"";
+
+        // Act
+        using var result = await Client.UpdateCarTariff("EV12345", request, ifMatch, Token);
+
+        // Assert
+        Assert.True(result.ResponseMessage.IsSuccessStatusCode);
+        Assert.NotNull(result.ResponseMessage.Headers.ETag);
+        var content = result.GetContent();
+        Assert.NotNull(content);
+        Assert.Equal(650m, content.BaseDayRental);
+        Assert.Equal(0m, content.BaseKmPrice);
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_WithMismatchedIfMatch_Returns412PreconditionFailed()
+    {
+        // Arrange
+        var api = Substitute.For<ICarFleetApi>();
+        api.UpdateCarTariff("EV12345", 650m, 0m, Arg.Any<byte[]?>(), Arg.Any<CancellationToken>())
+           .Returns<Car>(_ => throw new RentalConcurrencyException("Concurrency conflict"));
+        ReplaceService(api);
+
+        byte[] requestRowVersion = [1, 2, 3, 4];
+        byte[] headerRowVersion = [9, 9, 9, 9];
+        var request = new UpdateCarTariffRequest(650m, 0m, requestRowVersion);
+        var ifMatch = $"\"{Convert.ToBase64String(headerRowVersion)}\"";
+
+        // Act
+        using var result = await Client.UpdateCarTariff("EV12345", request, ifMatch, Token);
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.PreconditionFailed, result.ResponseMessage.StatusCode);
     }
 }

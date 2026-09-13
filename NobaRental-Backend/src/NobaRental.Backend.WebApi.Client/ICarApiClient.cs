@@ -11,6 +11,14 @@ public interface ICarApiClient
     [AllowAnyStatusCode]
     Task<Response<CarResponse>> RegisterCar([Body] RegisterCarRequest request, CancellationToken cancellationToken = default);
 
+    [Put("api/v1/cars/{registrationNumber}/tariff")]
+    [AllowAnyStatusCode]
+    Task<Response<CarResponse>> UpdateCarTariff(
+        [Path] string registrationNumber,
+        [Body] UpdateCarTariffRequest request,
+        [Header("If-Match")] string? ifMatch = null,
+        CancellationToken cancellationToken = default);
+
     [Delete("api/v1/cars/{registrationNumber}")]
     [AllowAnyStatusCode]
     Task<Response<string>> DeleteCar([Path] string registrationNumber, CancellationToken cancellationToken = default);

@@ -221,4 +221,75 @@ public sealed class CarFleetApiTests : IDisposable
         var result = await _api.GetCarByRegistrationNumber("NOPE", Token);
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task UpdateCarTariff_WhenCarExists_UpdatesRatesSuccessfully()
+    {
+        await _api.RegisterCar("TF11111", CarCategory.Combi, 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
+
+        var updated = await _api.UpdateCarTariff("TF11111", baseDayRental: 850m, baseKmPrice: 3.5m, cancellationToken: Token);
+
+        Assert.Equal(850m, updated.BaseDayRental);
+        Assert.Equal(3.5m, updated.BaseKmPrice);
+
+        var inDb = await _ctx.Cars.SingleAsync(c => c.RegistrationNumber == "TF11111", Token);
+        Assert.Equal(850m, inDb.BaseDayRental);
+        Assert.Equal(3.5m, inDb.BaseKmPrice);
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_WhenSmallCar_ForcesBaseKmPriceToZero()
+    {
+        await _api.RegisterCar("SM99999", CarCategory.SmallCar, 1000, "OSL", 400m, cancellationToken: Token);
+
+        var updated = await _api.UpdateCarTariff("sm99999", baseDayRental: 550m, baseKmPrice: 10m, cancellationToken: Token);
+
+        Assert.Equal(550m, updated.BaseDayRental);
+        Assert.Equal(0m, updated.BaseKmPrice);
+
+        var inDb = await _ctx.Cars.SingleAsync(c => c.RegistrationNumber == "SM99999", Token);
+        Assert.Equal(0m, inDb.BaseKmPrice);
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_WhenCarIsRented_UpdatesRatesSuccessfullyForFutureRentals()
+    {
+        await _api.RegisterCar("RN33333", CarCategory.Truck, 5000, "OSL", 1000m, baseKmPrice: 5m, cancellationToken: Token);
+        var inDb = await _ctx.Cars.SingleAsync(c => c.RegistrationNumber == "RN33333", Token);
+        inDb.Status = CarStatusValue.Rented;
+        await _ctx.SaveChangesAsync(Token);
+
+        var updated = await _api.UpdateCarTariff("RN33333", baseDayRental: 1200m, baseKmPrice: 6m, cancellationToken: Token);
+
+        Assert.Equal(1200m, updated.BaseDayRental);
+        Assert.Equal(6m, updated.BaseKmPrice);
+        Assert.Equal(CarStatus.Rented, updated.Status);
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_WhenZeroOrNegativeDayRate_ThrowsArgumentOutOfRangeException()
+    {
+        await _api.RegisterCar("TF22222", CarCategory.Combi, 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            _api.UpdateCarTariff("TF22222", baseDayRental: 0m, cancellationToken: Token));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            _api.UpdateCarTariff("TF22222", baseDayRental: -50m, cancellationToken: Token));
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_WhenNegativeKmPrice_ThrowsArgumentOutOfRangeException()
+    {
+        await _api.RegisterCar("TF33333", CarCategory.Combi, 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            _api.UpdateCarTariff("TF33333", baseDayRental: 600m, baseKmPrice: -1m, cancellationToken: Token));
+    }
+
+    [Fact]
+    public async Task UpdateCarTariff_WhenCarNotFound_ThrowsInvalidRentalOperationException()
+    {
+        await Assert.ThrowsAsync<InvalidRentalOperationException>(() =>
+            _api.UpdateCarTariff("NOTFOUND", baseDayRental: 600m, cancellationToken: Token));
+    }
 }

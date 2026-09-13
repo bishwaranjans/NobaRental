@@ -1,0 +1,69 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    @if (Car.Status == CarStatusDto.Rented)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">
+                            Vehicle is currently <strong>Rented</strong>. This updated tariff will automatically take effect from its <strong>next rental</strong>. The ongoing active rental's pricing is preserved.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">
+                            Update the base commercial tariffs for vehicle <strong>@Car.RegistrationNumber</strong>.
+                        </MudAlert>
+                    }
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Value="@Car.RegistrationNumber"
+                                  Label="Registration Number"
+                                  ReadOnly="true"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Value="@Car.Category.ToString()"
+                                  Label="Vehicle Category"
+                                  ReadOnly="true"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="BaseDayRental"
+                                     Label="Base Day Rental (NOK)"
+                                     Min="0.01m"
+                                     Format="N2"
+                                     Required="true"
+                                     RequiredError="Day rate is required"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="BaseKmPrice"
+                                     Label="Base Km Price (NOK)"
+                                     Min="0m"
+                                     Format="N2"
+                                     Disabled="@IsSmallCar"
+                                     HelperText="@(IsSmallCar ? "Km rate is 0 NOK for small cars" : "Price per kilometer driven")"
+                                     Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || IsSubmitting)"
+                   OnClick="Submit">
+            @if (IsSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Saving...</MudText>
+            }
+            else
+            {
+                <MudText>Save Tariff</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>

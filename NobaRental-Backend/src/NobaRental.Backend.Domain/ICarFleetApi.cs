@@ -14,6 +14,13 @@ public interface ICarFleetApi
         decimal baseKmPrice = 0m,
         CancellationToken cancellationToken = default);
 
+    Task<Car> UpdateCarTariff(
+        string registrationNumber,
+        decimal baseDayRental,
+        decimal baseKmPrice = 0m,
+        byte[]? rowVersion = null,
+        CancellationToken cancellationToken = default);
+
     Task DeleteCar(string registrationNumber, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyCollection<Car>> GetAllCars(CancellationToken cancellationToken = default);
