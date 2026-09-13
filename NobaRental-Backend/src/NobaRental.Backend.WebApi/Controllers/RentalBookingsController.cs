@@ -21,39 +21,18 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterPickup([FromBody] RegisterPickupRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await rentalBookingApi.RegisterPickup(
-                registrationNumber: request.RegistrationNumber,
-                customerSsn: request.CustomerSsn,
-                category: request.Category.MapToDomain(),
-                pickupStationCode: request.PickupStationCode,
-                pickupDateTime: request.PickupDateTime,
-                pickupMeterReadingKm: request.PickupMeterReadingKm,
-                baseDayRental: request.BaseDayRental,
-                baseKmPrice: request.BaseKmPrice,
-                cancellationToken: cancellationToken);
+        var result = await rentalBookingApi.RegisterPickup(
+            registrationNumber: request.RegistrationNumber,
+            customerSsn: request.CustomerSsn,
+            category: request.Category.MapToDomain(),
+            pickupStationCode: request.PickupStationCode,
+            pickupDateTime: request.PickupDateTime,
+            pickupMeterReadingKm: request.PickupMeterReadingKm,
+            baseDayRental: request.BaseDayRental,
+            baseKmPrice: request.BaseKmPrice,
+            cancellationToken: cancellationToken);
 
-            return CreatedAtAction(nameof(GetByBookingNumber), new { bookingNumber = result.BookingNumber }, result.MapToResponse());
-        }
-        catch (InvalidRentalOperationException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Invalid Rental Operation",
-                Detail = ex.Message,
-                Status = StatusCodes.Status409Conflict
-            });
-        }
-        catch (RentalValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Rental Validation Error",
-                Detail = ex.Message,
-                Status = StatusCodes.Status400BadRequest
-            });
-        }
+        return CreatedAtAction(nameof(GetByBookingNumber), new { bookingNumber = result.BookingNumber }, result.MapToResponse());
     }
 
     [HttpPost("return")]
@@ -64,54 +43,15 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterReturn([FromBody] RegisterReturnRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await rentalBookingApi.RegisterReturn(
-                bookingNumber: request.BookingNumber,
-                returnStationCode: request.ReturnStationCode,
-                returnDateTime: request.ReturnDateTime,
-                returnMeterReadingKm: request.ReturnMeterReadingKm,
-                rowVersion: request.RowVersion,
-                cancellationToken: cancellationToken);
+        var result = await rentalBookingApi.RegisterReturn(
+            bookingNumber: request.BookingNumber,
+            returnStationCode: request.ReturnStationCode,
+            returnDateTime: request.ReturnDateTime,
+            returnMeterReadingKm: request.ReturnMeterReadingKm,
+            rowVersion: request.RowVersion,
+            cancellationToken: cancellationToken);
 
-            return Ok(result.MapToResponse());
-        }
-        catch (BookingNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Booking Not Found",
-                Detail = ex.Message,
-                Status = StatusCodes.Status404NotFound
-            });
-        }
-        catch (RentalConcurrencyException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Concurrency Conflict",
-                Detail = ex.Message,
-                Status = StatusCodes.Status409Conflict
-            });
-        }
-        catch (RentalValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Rental Validation Error",
-                Detail = ex.Message,
-                Status = StatusCodes.Status400BadRequest
-            });
-        }
-        catch (InvalidRentalOperationException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Invalid Rental Operation",
-                Detail = ex.Message,
-                Status = StatusCodes.Status409Conflict
-            });
-        }
+        return Ok(result.MapToResponse());
     }
 
     [HttpGet("{bookingNumber:long}")]
@@ -177,38 +117,17 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> EstimatePrice([FromBody] EstimatePriceRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var estimate = await rentalBookingApi.EstimatePrice(
-                bookingNumber: request.BookingNumber,
-                returnDateTime: request.ReturnDateTime,
-                returnMeterReadingKm: request.ReturnMeterReadingKm,
-                cancellationToken: cancellationToken);
+        var estimate = await rentalBookingApi.EstimatePrice(
+            bookingNumber: request.BookingNumber,
+            returnDateTime: request.ReturnDateTime,
+            returnMeterReadingKm: request.ReturnMeterReadingKm,
+            cancellationToken: cancellationToken);
 
-            return Ok(new EstimatePriceResponse(
-                BookingNumber: estimate.BookingNumber,
-                CalculatedDays: estimate.CalculatedDays,
-                CalculatedKm: estimate.CalculatedKm,
-                EstimatedPrice: estimate.EstimatedPrice,
-                Currency: estimate.Currency));
-        }
-        catch (BookingNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Booking Not Found",
-                Detail = ex.Message,
-                Status = StatusCodes.Status404NotFound
-            });
-        }
-        catch (ArgumentOutOfRangeException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Validation Error",
-                Detail = ex.Message,
-                Status = StatusCodes.Status400BadRequest
-            });
-        }
+        return Ok(new EstimatePriceResponse(
+            BookingNumber: estimate.BookingNumber,
+            CalculatedDays: estimate.CalculatedDays,
+            CalculatedKm: estimate.CalculatedKm,
+            EstimatedPrice: estimate.EstimatedPrice,
+            Currency: estimate.Currency));
     }
 }

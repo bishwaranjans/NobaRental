@@ -41,12 +41,14 @@ services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 services.AddLocalization();
 services.AddEndpointsApiExplorer();
-services.AddHttpContextAccessor();
+services.AddProblemDetails();
+services.AddExceptionHandler<NobaRental.Backend.WebApi.Middleware.GlobalExceptionHandler>();
 services.ConfigureAuthentication(settings.Auth);
 services.ConfigureHealthChecks();
 services.ConfigureSwagger();
 
 var app = builder.Build();
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

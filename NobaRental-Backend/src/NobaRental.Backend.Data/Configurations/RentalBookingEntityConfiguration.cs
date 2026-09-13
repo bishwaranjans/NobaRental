@@ -20,7 +20,9 @@ public class RentalBookingEntityConfiguration : IEntityTypeConfiguration<RentalB
     private static void ConfigureProperties(EntityTypeBuilder<RentalBookingEntity> b)
     {
         b.Property(x => x.RegistrationNumber).HasMaxLength(20).IsRequired();
-        b.HasIndex(x => x.RegistrationNumber);
+        b.HasIndex(x => x.RegistrationNumber)
+            .IsUnique()
+            .HasFilter("[Status] = 1");
 
         b.Property(x => x.CustomerSsn).HasMaxLength(20).IsRequired();
         b.Property(x => x.Category).HasConversion<int>().IsRequired();

@@ -75,7 +75,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         Assert.NotNull(content);
         Assert.Equal(101L, content.BookingNumber);
         Assert.Equal("EV12345", content.RegistrationNumber);
-        Assert.Equal("12345678901", content.CustomerSsn);
+        Assert.Equal("****** 78901", content.CustomerSsn);
         Assert.Equal(DtoCarCategory.SmallCar, content.Category);
         Assert.Equal(DtoRentalStatus.Active, content.Status);
         Assert.Equal("OSL", content.PickupStationCode);

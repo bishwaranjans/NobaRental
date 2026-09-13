@@ -9,7 +9,7 @@ internal static class RentalBookingMap
         new(
             BookingNumber: domain.BookingNumber,
             RegistrationNumber: domain.RegistrationNumber,
-            CustomerSsn: domain.CustomerSsn,
+            CustomerSsn: MaskSsn(domain.CustomerSsn),
             Category: domain.Category.MapToResponse(),
             PickupStationCode: domain.PickupStationCode,
             PickupDateTime: domain.PickupDateTime,
@@ -35,4 +35,15 @@ internal static class RentalBookingMap
             TotalCount: paged.TotalCount,
             PageNumber: paged.PageNumber,
             PageSize: paged.PageSize);
+
+    private static string MaskSsn(string? ssn)
+    {
+        if (string.IsNullOrWhiteSpace(ssn))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = ssn.Trim();
+        return trimmed.Length >= 5 ? $"****** {trimmed[^5..]}" : "******";
+    }
 }

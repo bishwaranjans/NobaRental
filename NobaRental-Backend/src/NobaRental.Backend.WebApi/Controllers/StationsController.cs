@@ -46,64 +46,40 @@ public class StationsController(IStationApi stationApi) : ControllerBase
     [HttpPost]
     [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType<StationResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<StationResponse>> CreateStation(
         [FromBody] CreateStationRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var station = await _stationApi.CreateStation(request.Code, request.Name, request.City, cancellationToken);
-            var response = station.MapToResponse();
-            return CreatedAtAction(nameof(GetStationByCode), new { code = response.Code }, response);
-        }
-        catch (InvalidRentalOperationException ex)
-        {
-            return BadRequest(new ProblemDetails { Title = "Invalid Operation", Detail = ex.Message });
-        }
+        var station = await _stationApi.CreateStation(request.Code, request.Name, request.City, cancellationToken);
+        var response = station.MapToResponse();
+        return CreatedAtAction(nameof(GetStationByCode), new { code = response.Code }, response);
     }
 
     [HttpPut("{code}")]
     [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType<StationResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<StationResponse>> UpdateStation(
         string code,
         [FromBody] UpdateStationRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var updated = await _stationApi.UpdateStation(code, request.Name, request.City, request.IsActive, request.RowVersion, cancellationToken);
-            return Ok(updated.MapToResponse());
-        }
-        catch (RentalConcurrencyException ex)
-        {
-            return Conflict(new ProblemDetails { Title = "Concurrency Conflict", Detail = ex.Message });
-        }
-        catch (InvalidRentalOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Not Found", Detail = ex.Message });
-        }
+        var updated = await _stationApi.UpdateStation(code, request.Name, request.City, request.IsActive, request.RowVersion, cancellationToken);
+        return Ok(updated.MapToResponse());
     }
 
     [HttpDelete("{code}")]
     [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteStation(
         string code,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            await _stationApi.DeleteStation(code, cancellationToken);
-            return NoContent();
-        }
-        catch (StationInUseException ex)
-        {
-            return Conflict(new ProblemDetails { Title = "Station In Use", Detail = ex.Message });
-        }
+        await _stationApi.DeleteStation(code, cancellationToken);
+        return NoContent();
     }
 }

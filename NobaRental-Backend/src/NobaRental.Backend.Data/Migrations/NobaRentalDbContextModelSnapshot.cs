@@ -187,7 +187,9 @@ partial class NobaRentalDbContextModelSnapshot : ModelSnapshot
 
                     b.HasIndex("PickupStationCode");
 
-                    b.HasIndex("RegistrationNumber");
+                    b.HasIndex("RegistrationNumber")
+                        .IsUnique()
+                        .HasFilter("[Status] = 1");
 
                     b.HasIndex("ReturnStationCode");
 

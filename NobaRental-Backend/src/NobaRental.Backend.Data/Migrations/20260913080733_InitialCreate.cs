@@ -140,7 +140,9 @@ public partial class InitialCreate : Migration
         migrationBuilder.CreateIndex(
             name: "IX_RentalBooking_RegistrationNumber",
             table: "RentalBooking",
-            column: "RegistrationNumber");
+            column: "RegistrationNumber",
+            unique: true,
+            filter: "[Status] = 1");
 
         migrationBuilder.CreateIndex(
             name: "IX_RentalBooking_ReturnStationCode",

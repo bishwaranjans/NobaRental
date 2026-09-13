@@ -51,7 +51,19 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             baseKmPrice: baseKmPrice);
 
         await ctx.RentalBookings.AddAsync(entity, cancellationToken);
-        await ctx.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await ctx.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new RentalConcurrencyException($"Car '{normalizedReg}' was rented or modified by another concurrent operation.", ex);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new RentalConcurrencyException($"Car '{normalizedReg}' could not be rented due to a concurrent update or active rental conflict.", ex);
+        }
 
         return entity.Map();
     }
@@ -144,7 +156,9 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.Trim().ToUpperInvariant();
-            query = query.Where(b => b.RegistrationNumber.Contains(term) || b.CustomerSsn.Contains(term));
+            query = term.Length == 11 && term.All(char.IsDigit)
+                ? query.Where(b => b.RegistrationNumber.Contains(term) || b.CustomerSsn == term)
+                : query.Where(b => b.RegistrationNumber.Contains(term));
         }
 
         if (!string.IsNullOrWhiteSpace(stationCode))

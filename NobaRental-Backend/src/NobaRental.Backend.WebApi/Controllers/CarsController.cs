@@ -21,35 +21,14 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterCar([FromBody] RegisterCarRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await carFleetApi.RegisterCar(
-                registrationNumber: request.RegistrationNumber,
-                category: request.Category.MapToDomain(),
-                initialMeterReadingKm: request.InitialMeterReadingKm,
-                stationCode: request.StationCode,
-                cancellationToken: cancellationToken);
+        var result = await carFleetApi.RegisterCar(
+            registrationNumber: request.RegistrationNumber,
+            category: request.Category.MapToDomain(),
+            initialMeterReadingKm: request.InitialMeterReadingKm,
+            stationCode: request.StationCode,
+            cancellationToken: cancellationToken);
 
-            return CreatedAtAction(nameof(GetByRegistrationNumber), new { registrationNumber = result.RegistrationNumber }, result.MapToResponse());
-        }
-        catch (InvalidRentalOperationException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Car Registration Conflict",
-                Detail = ex.Message,
-                Status = StatusCodes.Status409Conflict
-            });
-        }
-        catch (ArgumentOutOfRangeException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Validation Error",
-                Detail = ex.Message,
-                Status = StatusCodes.Status400BadRequest
-            });
-        }
+        return CreatedAtAction(nameof(GetByRegistrationNumber), new { registrationNumber = result.RegistrationNumber }, result.MapToResponse());
     }
 
     [HttpGet]
@@ -85,20 +64,8 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteCar(string registrationNumber, CancellationToken cancellationToken)
     {
-        try
-        {
-            await carFleetApi.DeleteCar(registrationNumber, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidRentalOperationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Decommission Failed",
-                Detail = ex.Message,
-                Status = StatusCodes.Status400BadRequest
-            });
-        }
+        await carFleetApi.DeleteCar(registrationNumber, cancellationToken);
+        return NoContent();
     }
 
     [HttpGet("available")]
