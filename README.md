@@ -16,7 +16,7 @@ Cars for rent are categorized into three initial groups:
 - **Combi**
 - **Truck**
 
-> **Design Principle**: The architecture follows the **Open/Closed Principle (OCP)**. Additional vehicle categories can be introduced seamlessly by extending the pricing logic without altering database constraints or breaking active rentals.
+More may be added later.
 
 ### 1.2 Rental Rates & Pricing Formulas (in NOK)
 All rates and calculated totals are explicitly denoted in **Norwegian Krone (NOK)** with two decimal places (`decimal(18, 2)`):
