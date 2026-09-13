@@ -42,12 +42,12 @@ All rates and calculated totals are explicitly denoted in **Norwegian Krone (NOK
    - Booking number: **Auto-generated** sequential identifier (`long BookingNumber` via database `IDENTITY(1, 1)`).
    - Pickup station: Selection filters available vehicles physically present at that hub.
    - Available vehicle selection: Automatically locks vehicle category and current odometer reading to prevent tampering, typos, or billing fraud.
-   - Customer SSN: Validated 11-digit national identity number (masked as `****** 78901` in API responses).
+   - Customer SSN: Validated as exactly 11 digits (masked as `****** 78901` in API responses); it is not available as a booking search field.
    - Server-Authoritative Tariffs: Tariffs (`BaseDayRental` and `BaseKmPrice`) are configured per vehicle during fleet registration and resolved strictly on the backend. `RegisterPickupRequest` contains zero client-dictated pricing fields. For small cars, `BaseKmPrice` is strictly enforced to `0.00 NOK`.
 2. **Registration of Returned Car**:
    - Single RESTful route: `POST /api/v1/rentals/{bookingNumber}/return`.
    - Route path specifies the booking identity; payload contains return station, return date/time, and return odometer reading (`returnKm >= pickupKm`).
-   - Concurrency precondition: Client passes the entity's `RowVersion` via the standard HTTP `If-Match` header.
+   - Concurrency precondition: Client must pass the entity's `RowVersion` via the standard HTTP `If-Match` header. Missing headers return `428 Precondition Required`; stale headers return `412 Precondition Failed`.
    - **Outcome**: Automatic computation of billed days, kilometers driven, vehicle relocation to return station, and final price breakdown in NOK according to category formulas. Response returns updated `ETag`.
 
 ---
@@ -237,7 +237,7 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 | Method | Endpoint | Description | Headers / Concurrency |
 |---|---|---|---|
 | `POST` | `/api/v1/rentals/pickup` | Register vehicle pickup with station and SSN (resolves vehicle tariffs server-side) | Emits `ETag` (`201 Created`) |
-| `POST` | `/api/v1/rentals/{bookingNumber}/return` | Register vehicle return, calculate totals, and relocate vehicle | Requires/Evaluates `If-Match` ETag (`412 Precondition Failed` on mismatch; emits new `ETag` on `200 OK`) |
+| `POST` | `/api/v1/rentals/{bookingNumber}/return` | Register vehicle return, calculate totals, and relocate vehicle | Requires `If-Match` ETag (`428` when missing, `412` when stale; emits new `ETag` on `200 OK`) |
 | `POST` | `/api/v1/rentals/estimate-price` | Single Source of Truth: estimate price and duration in advance of return | - |
 | `GET` | `/api/v1/rentals/{bookingNumber}` | Retrieve specific rental booking by unique booking number | Supports `If-None-Match` (`304 Not Modified`); emits `ETag` |
 | `GET` | `/api/v1/rentals` | Paginated booking records with sorting and filters | - |

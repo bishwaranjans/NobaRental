@@ -39,6 +39,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         ex switch
         {
             BookingNotFoundException notFound => (StatusCodes.Status404NotFound, "Booking Not Found", notFound.Message),
+            PreconditionRequiredException required => (StatusCodes.Status428PreconditionRequired, "Precondition Required", required.Message),
             PreconditionFailedException precondition => (StatusCodes.Status412PreconditionFailed, "Precondition Failed", precondition.Message),
             RentalConcurrencyException concurrency => (StatusCodes.Status409Conflict, "Concurrency Conflict", concurrency.Message),
             StationInUseException inUse => (StatusCodes.Status409Conflict, "Station In Use", inUse.Message),

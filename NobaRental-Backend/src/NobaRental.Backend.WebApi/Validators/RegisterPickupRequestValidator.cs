@@ -12,8 +12,8 @@ public class RegisterPickupRequestValidator : AbstractValidator<RegisterPickupRe
             .MaximumLength(20);
 
         RuleFor(x => x.CustomerSsn)
-            .NotEmpty()
-            .MaximumLength(20);
+            .Matches(@"^\d{11}$")
+            .WithMessage("Customer SSN must contain exactly 11 digits.");
 
         RuleFor(x => x.PickupStationCode)
             .NotEmpty()

@@ -6,6 +6,7 @@ using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Test.Helpers;
 using NSubstitute;
 using RestEase;
+using System.Net;
 using DtoCarCategory = NobaRental.Backend.WebApi.Client.Models.Values.CarCategoryDto;
 using DtoRentalStatus = NobaRental.Backend.WebApi.Client.Models.Values.RentalStatusDto;
 
@@ -164,6 +165,45 @@ public sealed class RentalBookingApiClientTests : TestWebHost
 
         // Assert
         Assert.Equal(System.Net.HttpStatusCode.PreconditionFailed, result.ResponseMessage.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReturnBooking_WithoutIfMatch_ReturnsPreconditionRequired()
+    {
+        var api = Substitute.For<IRentalBookingApi>();
+        ReplaceService(api);
+
+        var request = new ReturnRentalRequest(
+            ReturnStationCode: "BGO",
+            ReturnDateTime: new DateTimeOffset(2026, 9, 14, 10, 0, 0, TimeSpan.Zero),
+            ReturnMeterReadingKm: 10350);
+
+        using var result = await Client.ReturnBooking(101L, request, ifMatch: string.Empty, Token);
+
+        Assert.Equal(HttpStatusCode.PreconditionRequired, result.ResponseMessage.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("1234567890")]
+    [InlineData("123456789012")]
+    [InlineData("1234567890A")]
+    public async Task RegisterPickup_InvalidSsn_ReturnsBadRequest(string ssn)
+    {
+        var api = Substitute.For<IRentalBookingApi>();
+        ReplaceService(api);
+
+        var request = new RegisterPickupRequest(
+            RegistrationNumber: "EV12345",
+            CustomerSsn: ssn,
+            Category: DtoCarCategory.SmallCar,
+            PickupStationCode: "OSL",
+            PickupDateTime: new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero),
+            PickupMeterReadingKm: 10000);
+
+        using var result = await Client.RegisterPickup(request, Token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, result.ResponseMessage.StatusCode);
     }
 
     [Fact]

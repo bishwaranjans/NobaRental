@@ -50,6 +50,11 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            throw new PreconditionRequiredException("The If-Match header is required when returning a booking.");
+        }
+
         var rowVersion = ResolveRowVersion(ifMatch, request.RowVersion, out var hasIfMatch);
 
         RentalBooking result;

@@ -60,7 +60,7 @@ public class RentalBookingApi(
         {
             throw new RentalConcurrencyException($"Car '{normalizedReg}' was rented or modified by another concurrent operation.", ex);
         }
-        catch (DbUpdateException ex)
+        catch (DbUpdateException ex) when (IsActiveRentalConflict(ex))
         {
             throw new RentalConcurrencyException($"Car '{normalizedReg}' could not be rented due to a concurrent update or active rental conflict.", ex);
         }
@@ -156,9 +156,7 @@ public class RentalBookingApi(
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.Trim().ToUpperInvariant();
-            query = term.Length == 11 && term.All(char.IsDigit)
-                ? query.Where(b => b.RegistrationNumber.Contains(term) || b.CustomerSsn == term)
-                : query.Where(b => b.RegistrationNumber.Contains(term));
+            query = query.Where(b => b.RegistrationNumber.Contains(term));
         }
 
         if (!string.IsNullOrWhiteSpace(stationCode))
@@ -282,4 +280,11 @@ public class RentalBookingApi(
             "totalprice" => sortDescending ? query.OrderByDescending(b => b.TotalPrice) : query.OrderBy(b => b.TotalPrice),
             _ => sortDescending ? query.OrderByDescending(b => b.PickupDateTime) : query.OrderBy(b => b.PickupDateTime),
         };
+
+    private static bool IsActiveRentalConflict(DbUpdateException exception) =>
+        exception.InnerException is Microsoft.Data.SqlClient.SqlException sqlException &&
+        sqlException.Errors
+            .Cast<Microsoft.Data.SqlClient.SqlError>()
+            .Any(error => error.Number is 2601 or 2627 &&
+                error.Message.Contains("IX_RentalBooking_RegistrationNumber", StringComparison.OrdinalIgnoreCase));
 }

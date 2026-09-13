@@ -31,7 +31,7 @@ public sealed class NobaRentalDbContextTests
 
         var ssnProperty = entityType.FindProperty(nameof(RentalBookingEntity.CustomerSsn));
         Assert.NotNull(ssnProperty);
-        Assert.Equal(20, ssnProperty.GetMaxLength());
+        Assert.Equal(11, ssnProperty.GetMaxLength());
 
         AssertMonetaryPrecision(entityType, nameof(RentalBookingEntity.BaseDayRental));
         AssertMonetaryPrecision(entityType, nameof(RentalBookingEntity.BaseKmPrice));

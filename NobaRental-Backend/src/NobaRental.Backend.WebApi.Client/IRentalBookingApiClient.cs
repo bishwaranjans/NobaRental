@@ -16,7 +16,7 @@ public interface IRentalBookingApiClient
     Task<Response<RentalBookingResponse>> ReturnBooking(
         [Path] long bookingNumber,
         [Body] ReturnRentalRequest request,
-        [Header("If-Match")] string? ifMatch = null,
+        [Header("If-Match")] string ifMatch,
         CancellationToken cancellationToken = default);
 
     [Get("api/v1/rentals/{bookingNumber}")]

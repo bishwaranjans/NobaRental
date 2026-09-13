@@ -124,9 +124,13 @@ public partial class ReturnDialog(
 
         try
         {
-            var ifMatch = Booking.RowVersion is { Length: > 0 }
-                ? $"\"{Convert.ToBase64String(Booking.RowVersion)}\""
-                : null;
+            if (Booking.RowVersion is not { Length: > 0 })
+            {
+                snackbar.AddError("The booking version is unavailable. Refresh the booking before returning it.");
+                return;
+            }
+
+            var ifMatch = $"\"{Convert.ToBase64String(Booking.RowVersion)}\"";
 
             var request = new ReturnRentalRequest(
                 ReturnStationCode: ReturnStationCode,

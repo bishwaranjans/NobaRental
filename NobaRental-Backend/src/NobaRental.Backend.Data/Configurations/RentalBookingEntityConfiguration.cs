@@ -24,7 +24,7 @@ public class RentalBookingEntityConfiguration : IEntityTypeConfiguration<RentalB
             .IsUnique()
             .HasFilter("[Status] = 1");
 
-        b.Property(x => x.CustomerSsn).HasMaxLength(20).IsRequired();
+        b.Property(x => x.CustomerSsn).HasMaxLength(11).IsRequired();
         b.Property(x => x.Category).HasConversion<int>().IsRequired();
         b.Property(x => x.Status).HasConversion<int>().IsRequired();
         b.Property(x => x.Currency).HasMaxLength(5).IsRequired();
