@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NobaRental.Backend.Domain;
 using NobaRental.Backend.Domain.Exceptions;
+using NobaRental.Backend.WebApi.Auth;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Mapping;
@@ -14,6 +16,7 @@ public class StationsController(IStationApi stationApi) : ControllerBase
     private readonly IStationApi _stationApi = stationApi;
 
     [HttpGet]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<IReadOnlyCollection<StationResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyCollection<StationResponse>>> GetAllStations(
         [FromQuery] bool? includeInactive = null,
@@ -24,6 +27,7 @@ public class StationsController(IStationApi stationApi) : ControllerBase
     }
 
     [HttpGet("{code}")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<StationResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<StationResponse>> GetStationByCode(
@@ -40,6 +44,7 @@ public class StationsController(IStationApi stationApi) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType<StationResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<StationResponse>> CreateStation(
@@ -59,6 +64,7 @@ public class StationsController(IStationApi stationApi) : ControllerBase
     }
 
     [HttpPut("{code}")]
+    [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType<StationResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -83,6 +89,7 @@ public class StationsController(IStationApi stationApi) : ControllerBase
     }
 
     [HttpDelete("{code}")]
+    [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> DeleteStation(

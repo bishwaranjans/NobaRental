@@ -36,6 +36,12 @@ public abstract class TestWebHost : WebApplicationFactory<Program>
         {
             services.Replace(service);
         }
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = TestAuthHandler.AuthScheme;
+            options.DefaultChallengeScheme = TestAuthHandler.AuthScheme;
+        }).AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthScheme, _ => { });
     }
 
     protected void ReplaceService<T>(T instance) where T : class

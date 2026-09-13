@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NobaRental.Backend.Domain;
 using NobaRental.Backend.Domain.Exceptions;
+using NobaRental.Backend.WebApi.Auth;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Client.Models.Values;
@@ -13,6 +15,7 @@ namespace NobaRental.Backend.WebApi.Controllers;
 public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : ControllerBase
 {
     [HttpPost("pickup")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsPickup)]
     [ProducesResponseType<RentalBookingResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -54,6 +57,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     }
 
     [HttpPost("return")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsReturn)]
     [ProducesResponseType<RentalBookingResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -111,6 +115,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     }
 
     [HttpGet("{bookingNumber:long}")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<RentalBookingResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByBookingNumber(long bookingNumber, CancellationToken cancellationToken)
@@ -130,6 +135,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     }
 
     [HttpGet]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<PagedResultResponse<RentalBookingResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResultResponse<RentalBookingResponse>>> GetBookings(
         [FromQuery] int? pageNumber = null,
@@ -156,6 +162,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     }
 
     [HttpGet("active")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<IReadOnlyCollection<RentalBookingResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
     {
@@ -164,6 +171,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
     }
 
     [HttpPost("estimate-price")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<EstimatePriceResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

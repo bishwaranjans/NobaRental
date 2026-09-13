@@ -2,7 +2,6 @@ using FluentValidation;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using NobaRental.Backend.Business;
 using NobaRental.Backend.Business.Api;
 using NobaRental.Backend.Data;
 using NobaRental.Backend.Data.Helpers;
@@ -43,9 +42,9 @@ services.AddControllers()
 services.AddLocalization();
 services.AddEndpointsApiExplorer();
 services.AddHttpContextAccessor();
-services.AddSwaggerGen(options => options.CustomSchemaIds(x => x.ToString()));
-
+services.ConfigureAuthentication(settings.Auth);
 services.ConfigureHealthChecks();
+services.ConfigureSwagger();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
@@ -55,6 +54,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRequestLocalization(x =>
 {
     string[] supportedCultures = [CultureConstants.EnglishCulture, CultureConstants.NorwegianCulture];

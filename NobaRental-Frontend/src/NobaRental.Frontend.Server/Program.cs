@@ -20,6 +20,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddMudServices();
+builder.Services.AddHybridCache();
 builder.Services.ConfigureReverseProxy(builder);
 builder.Services.ConfigureHealthChecks();
 builder.Services.ConfigureApiClients(settings);

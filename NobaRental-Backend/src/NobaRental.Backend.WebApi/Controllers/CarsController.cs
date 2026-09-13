@@ -1,7 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NobaRental.Backend.Domain;
 using NobaRental.Backend.Domain.Exceptions;
-using NobaRental.Backend.Domain.Values;
+using NobaRental.Backend.WebApi.Auth;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
 using NobaRental.Backend.WebApi.Client.Models.Values;
@@ -14,6 +15,7 @@ namespace NobaRental.Backend.WebApi.Controllers;
 public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType<CarResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -51,6 +53,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<PagedResultResponse<CarResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResultResponse<CarResponse>>> GetCars(
         [FromQuery] int? pageNumber = null,
@@ -77,6 +80,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     }
 
     [HttpDelete("{registrationNumber}")]
+    [Authorize(Policy = AuthConstants.Policies.FleetManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteCar(string registrationNumber, CancellationToken cancellationToken)
@@ -98,6 +102,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     }
 
     [HttpGet("available")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<IReadOnlyCollection<CarResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAvailable(
         [FromQuery] string? stationCode = null,
@@ -110,6 +115,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     }
 
     [HttpGet("{registrationNumber}")]
+    [Authorize(Policy = AuthConstants.Policies.RentalsRead)]
     [ProducesResponseType<CarResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByRegistrationNumber(string registrationNumber, CancellationToken cancellationToken)

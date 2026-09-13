@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Antiforgery;
+using NobaRental.Frontend.Server.Services;
+using System.Net.Http.Headers;
+using Yarp.ReverseProxy.Transforms;
 
 namespace NobaRental.Frontend.Server.Startups;
 
@@ -8,6 +11,18 @@ internal static class ReverseProxyStartup
     {
         services.AddReverseProxy()
             .LoadFromConfig(builder.Configuration.GetRequiredSection("ReverseProxy"))
+            .AddTransforms(builderContext =>
+            {
+                builderContext.AddRequestTransform(async requestContext =>
+                {
+                    var tokenProvider = requestContext.HttpContext.RequestServices.GetRequiredService<ITokenProvider>();
+                    var token = await tokenProvider.GetAccessToken(requestContext.CancellationToken);
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        requestContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    }
+                });
+            })
             .AddServiceDiscoveryDestinationResolver();
     }
 
