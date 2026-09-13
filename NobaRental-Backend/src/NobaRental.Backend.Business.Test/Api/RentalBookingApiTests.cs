@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using NobaRental.Backend.Business.Api;
 using NobaRental.Backend.Business.Mapping;
+using NobaRental.Backend.Business.Pricing;
+using NobaRental.Backend.Business.Pricing.Strategies;
 using NobaRental.Backend.Data;
 using NobaRental.Backend.Data.Entities;
 using NobaRental.Backend.Data.Entities.Values;
@@ -27,7 +29,12 @@ public sealed class RentalBookingApiTests : IDisposable
             new StationEntity { Code = "BGO", Name = "Bergen Airport", City = "Bergen", IsActive = true });
         _ctx.SaveChanges();
 
-        _api = new RentalBookingApi(_ctx);
+        var calculator = new RentalPriceCalculator([
+            new SmallCarPricingStrategy(),
+            new CombiPricingStrategy(),
+            new TruckPricingStrategy()
+        ]);
+        _api = new RentalBookingApi(_ctx, calculator);
     }
 
     private void EnsureCar(string registrationNumber, CarCategory category, long meterReading = 0, string stationCode = "OSL", decimal baseDayRental = 500m, decimal baseKmPrice = 2m)

@@ -109,7 +109,8 @@ CarRental/
 │       │   ├── Api/CarFleetApi.cs                 # Car fleet service implementation
 │       │   ├── Api/RentalBookingApi.cs            # Rental booking service implementation
 │       │   ├── Api/StationApi.cs                  # Station management service implementation
-│       │   ├── Pricing/RentalPriceCalculator.cs   # Category pricing formulas (in NOK)
+│       │   ├── Pricing/RentalPriceCalculator.cs   # Strategy-driven pricing engine adhering to OCP
+│       │   ├── Pricing/Strategies/                # SmallCar, Combi, Truck pricing strategy implementations
 │       │   ├── Pricing/RentalDurationCalculator.cs# Billed days & km delta calculation
 │       │   └── Mapping/                           # Entity <-> Domain mappers (CarMap, StationMap, RentalBookingMap)
 │       ├── NobaRental.Backend.Business.Test/      # Unit tests for domain APIs, pricing & fleet rules (76 tests)
@@ -229,6 +230,7 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 | `GET` | `/api/v1/cars/available` | List available vehicles (filtered by station and category) |
 | `GET` | `/api/v1/cars/{registrationNumber}` | Retrieve vehicle details by license plate |
 | `POST` | `/api/v1/cars` | Register a new vehicle to the fleet |
+| `PUT` | `/api/v1/cars/{registrationNumber}/tariff` | Update vehicle commercial tariffs (supports mid-rental update for future rentals; protected by `If-Match`) |
 | `DELETE` | `/api/v1/cars/{registrationNumber}` | Decommission vehicle (soft-delete) |
 
 ### Rental Booking Endpoints

@@ -1,11 +1,27 @@
 using NobaRental.Backend.Domain.Exceptions;
 using NobaRental.Backend.Domain.Values;
+using System.Collections.Frozen;
 
 namespace NobaRental.Backend.Business.Pricing;
 
-public static class RentalPriceCalculator
+/// <summary>
+/// Strategy-driven rental price calculator adhering to Open/Closed Principle (OCP).
+/// Category-specific pricing logic is resolved from registered <see cref="ICarCategoryPricingStrategy"/> implementations.
+/// </summary>
+public sealed class RentalPriceCalculator : IRentalPriceCalculator
 {
-    public static decimal CalculatePrice(
+    private readonly FrozenDictionary<CarCategory, ICarCategoryPricingStrategy> _strategies;
+
+    public RentalPriceCalculator(IEnumerable<ICarCategoryPricingStrategy> strategies)
+    {
+        ArgumentNullException.ThrowIfNull(strategies);
+        _strategies = strategies.ToFrozenDictionary(s => s.Category);
+    }
+
+    /// <summary>
+    /// Calculates the total rental price by delegating to the resolved category strategy.
+    /// </summary>
+    public decimal CalculatePrice(
         CarCategory category,
         decimal baseDayRental,
         decimal baseKmPrice,
@@ -17,14 +33,13 @@ public static class RentalPriceCalculator
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(numberOfDays);
         ArgumentOutOfRangeException.ThrowIfNegative(numberOfKm);
 
-        var price = category switch
+        if (!_strategies.TryGetValue(category, out var strategy))
         {
-            CarCategory.SmallCar => baseDayRental * numberOfDays,
-            CarCategory.Combi => (baseDayRental * numberOfDays * 1.3m) + (baseKmPrice * numberOfKm),
-            CarCategory.Truck => (baseDayRental * numberOfDays * 1.5m) + (baseKmPrice * numberOfKm * 1.5m),
-            _ => throw new InvalidRentalOperationException($"Unsupported car category: '{category}'.")
-        };
+            throw new InvalidRentalOperationException($"Unsupported car category: '{category}'.");
+        }
 
+        var price = strategy.CalculatePrice(baseDayRental, baseKmPrice, numberOfDays, numberOfKm);
         return Math.Round(price, 2, MidpointRounding.AwayFromZero);
     }
 }
+

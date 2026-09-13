@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NobaRental.Backend.Business.Api;
+using NobaRental.Backend.Business.Pricing;
+using NobaRental.Backend.Business.Pricing.Strategies;
 using NobaRental.Backend.Data;
 using NobaRental.Backend.Data.Entities;
 using NobaRental.Backend.Domain.Exceptions;
@@ -31,7 +33,12 @@ public sealed class EndToEndLifecycleTests : IDisposable
 
         _stationApi = new StationApi(_ctx);
         _carApi = new CarFleetApi(_ctx);
-        _rentalApi = new RentalBookingApi(_ctx);
+        var calculator = new RentalPriceCalculator([
+            new SmallCarPricingStrategy(),
+            new CombiPricingStrategy(),
+            new TruckPricingStrategy()
+        ]);
+        _rentalApi = new RentalBookingApi(_ctx, calculator);
     }
 
     public void Dispose()

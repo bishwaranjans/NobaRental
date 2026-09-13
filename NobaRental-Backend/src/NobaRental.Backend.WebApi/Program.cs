@@ -28,6 +28,7 @@ services.AddScoped<IRentalBookingApi, RentalBookingApi>();
 services.AddScoped<ICarFleetApi, CarFleetApi>();
 services.AddScoped<IStationApi, StationApi>();
 services.ConfigureValidation();
+services.ConfigurePricing();
 
 services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));

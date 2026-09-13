@@ -11,7 +11,9 @@ using NobaRental.Backend.Domain.Values;
 
 namespace NobaRental.Backend.Business.Api;
 
-public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
+public class RentalBookingApi(
+    NobaRentalDbContext ctx,
+    IRentalPriceCalculator priceCalculator) : IRentalBookingApi
 {
     public async Task<RentalBooking> RegisterPickup(
         string registrationNumber,
@@ -211,7 +213,7 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
         var billedDays = RentalDurationCalculator.CalculateBilledDays(entity.PickupDateTime, returnDateTime);
         var drivenKm = RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, returnMeterReadingKm);
 
-        var price = RentalPriceCalculator.CalculatePrice(
+        var price = priceCalculator.CalculatePrice(
             category: entity.Category.ToDomain(),
             baseDayRental: entity.BaseDayRental,
             baseKmPrice: entity.BaseKmPrice,
@@ -252,12 +254,12 @@ public class RentalBookingApi(NobaRentalDbContext ctx) : IRentalBookingApi
             throw new InvalidRentalOperationException($"Pickup meter reading ({meter} km) cannot be less than car's current meter reading ({car.CurrentMeterReadingKm} km).");
     }
 
-    private static void CalculateReturnValues(RentalBookingEntity entity, string returnStation, DateTimeOffset returnDate, long returnMeter)
+    private void CalculateReturnValues(RentalBookingEntity entity, string returnStation, DateTimeOffset returnDate, long returnMeter)
     {
         var billedDays = RentalDurationCalculator.CalculateBilledDays(entity.PickupDateTime, returnDate);
         var drivenKm = RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, returnMeter);
 
-        var totalPrice = RentalPriceCalculator.CalculatePrice(
+        var totalPrice = priceCalculator.CalculatePrice(
             category: entity.Category.ToDomain(),
             baseDayRental: entity.BaseDayRental,
             baseKmPrice: entity.BaseKmPrice,
