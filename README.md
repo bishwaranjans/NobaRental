@@ -102,7 +102,7 @@ CarRental/
 │       │   ├── Pricing/RentalPriceCalculator.cs   # Category pricing formulas (in NOK)
 │       │   ├── Pricing/RentalDurationCalculator.cs# Billed days & km delta calculation
 │       │   └── Mapping/                           # Entity <-> Domain mappers (CarMap, StationMap, RentalBookingMap)
-│       ├── NobaRental.Backend.Business.Test/      # Unit tests for domain APIs, pricing & fleet rules (75 tests)
+│       ├── NobaRental.Backend.Business.Test/      # Unit tests for domain APIs, pricing & fleet rules (76 tests)
 │       ├── NobaRental.Backend.Data/               # EF Core persistence
 │       │   ├── Entities/                          # CarEntity, StationEntity, RentalBookingEntity
 │       │   ├── Entities/Common/                   # IAuditableEntity, ISoftDeletable, AuditableEntity, SoftDeletableEntity
@@ -111,11 +111,13 @@ CarRental/
 │       │   └── NobaRentalDbContext.cs             # DbContext with query filters, interceptors & unicode conventions
 │       ├── NobaRental.Backend.Data.MigrationStartup/ # Dedicated EF Core design-time migration host
 │       │   └── Program.cs                         # Configures DbContext for EF Core CLI tools
-│       ├── NobaRental.Backend.Data.Test/          # EF Core metadata, soft-delete & SQL Server tests (6 tests)
+│       ├── NobaRental.Backend.Data.Test/          # EF Core metadata, soft-delete & SQL Server tests (12 tests)
 │       ├── NobaRental.Backend.WebApi/             # ASP.NET Core REST API
-│       │   ├── Controllers/CarsController.cs      # Fleet REST API
-│       │   ├── Controllers/StationsController.cs  # Station REST API
-│       │   ├── Controllers/RentalBookingsController.cs # Rental REST API
+│       │   ├── Auth/                              # AuthConstants (scopes & policy names)
+│       │   ├── Controllers/CarsController.cs      # Fleet REST API [Authorize(FleetManage / RentalsRead)]
+│       │   ├── Controllers/StationsController.cs  # Station REST API [Authorize(FleetManage / RentalsRead)]
+│       │   ├── Controllers/RentalBookingsController.cs # Rental REST API [Authorize(RentalsPickup / RentalsReturn / RentalsRead)]
+│       │   ├── Startups/                          # AuthenticationStartup (JwtBearer), SwaggerStartup, HealthStartup
 │       │   ├── Validators/                        # FluentValidation request validators
 │       │   └── Mapping/                           # Domain Models <-> Client Response DTOs & Enum Value Mappers
 │       ├── NobaRental.Backend.WebApi.Client/      # Shared Client library
@@ -125,7 +127,7 @@ CarRental/
 │       │   ├── Models/Request/                    # DTO request records
 │       │   ├── Models/Response/                   # DTO response records & PagedResultResponse<T>
 │       │   └── ServiceCollectionExtensions.cs     # Typed client DI registration
-│       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration & enum mapping tests (49 tests)
+│       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration, auth & enum mapping tests (49 tests)
 ├── NobaRental-Frontend/
 │   └── src/
 │       ├── NobaRental.Frontend.Server/            # Blazor Server host with YARP reverse proxy & NavMenu
@@ -230,8 +232,94 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 
 ---
 
-## 6. CI/CD Pipelines & Cloud Infrastructure (Build & Infra)
+## 6. Authentication & Authorization (Auth0 Machine-to-Machine)
 
-- **`build/azure-pipelines-pr.yaml`**: Strict PR validation running build with `TreatWarningsAsErrors`, all 130 unit/integration tests, and Bicep syntax validation.
+The system implements enterprise OAuth2 Machine-to-Machine (M2M) authentication and scope-based authorization with **Auth0**, modeled after the architecture used in `NobbKontrakt`:
+
+```
+                                  [Auth0 Tenant]
+                     https://dev-nobarental.eu.auth0.com/
+                                     ^
+                                     | 1. Client Credentials Grant
+                                     |    (client_id, client_secret, audience, scope)
+                                     v
++--------------------------------------------------------------------------------+
+| NobaRental-Frontend.Server                                                     |
+|                                                                                |
+|  [TokenProvider]                                                               |
+|    - Requests JWT from Auth0 oauth/token                                       |
+|    - Caches token in HybridCache (refreshes 5 mins before expiry)              |
+|                                                                                |
+|  [BearerTokenHandler]                  [YARP ReverseProxy]                     |
+|    - Injects Authorization: Bearer       - Injects Authorization: Bearer       |
+|      into typed RestEase client            into proxied /api/v1 calls          |
++-----------------------------------+--------------------------------------------+
+                                    |
+                                    | 2. HTTP Requests with Bearer <JWT>
+                                    v
++--------------------------------------------------------------------------------+
+| NobaRental-Backend.WebApi (Resource Server)                                    |
+|                                                                                |
+|  [AuthenticationStartup]                                                       |
+|    - AddAuthentication(JwtBearerDefaults.AuthenticationScheme)                 |
+|    - AddJwtBearer(Authority, Audience)                                         |
+|    - AddAuthorization with Scopes / Permissions Policies                       |
+|                                                                                |
+|  [Controllers & Endpoints]                                                     |
+|    - [Authorize(Policies.RentalsPickup)] -> rentals:pickup                     |
+|    - [Authorize(Policies.RentalsReturn)] -> rentals:return                     |
+|    - [Authorize(Policies.RentalsRead)]   -> rentals:read                       |
+|    - [Authorize(Policies.FleetManage)]   -> fleet:manage                       |
++--------------------------------------------------------------------------------+
+```
+
+### 6.1 Scopes & Authorization Policies
+
+Fine-grained permissions enforce least-privilege access across all controller actions:
+
+| Scope (Permission) | Authorization Policy | Applied Endpoints |
+|---|---|---|
+| `rentals:pickup` | `RentalsPickup` | `POST /api/v1/rentals/pickup` |
+| `rentals:return` | `RentalsReturn` | `POST /api/v1/rentals/return` |
+| `rentals:read` | `RentalsRead` | `GET /api/v1/rentals/**`, `POST /api/v1/rentals/estimate-price`, `GET /api/v1/cars/**`, `GET /api/v1/stations/**` |
+| `fleet:manage` | `FleetManage` | `POST /api/v1/cars`, `DELETE /api/v1/cars/{reg}`, `POST /api/v1/stations`, `PUT /api/v1/stations/{code}`, `DELETE /api/v1/stations/{code}` |
+
+> Public endpoints: `/api/v1/status` and `/health` remain open for health probes and load balancer liveness checks.
+
+### 6.2 Token Management & Caching
+- **Token Acquisition**: `TokenProvider` requests JWT tokens using the OAuth2 `client_credentials` grant against `https://dev-nobarental.eu.auth0.com/oauth/token`.
+- **HybridCache Caching**: Tokens are cached in .NET 10's `HybridCache` with a 5-minute safety threshold before actual token expiration (`lifetime - 5 minutes`) to prevent edge-case 401s on in-flight requests.
+- **Dual Injection Points**:
+  1. **Blazor Server / C# Clients**: `BearerTokenHandler` (`DelegatingHandler`) automatically injects `Authorization: Bearer <token>` into typed RestEase client calls (`IRentalBookingApiClient`, `ICarApiClient`, `IStationApiClient`).
+  2. **Blazor WebAssembly**: YARP Reverse Proxy request transform injects the Bearer token before forwarding `/api/**` calls from the browser to the backend.
+
+### 6.3 Swagger UI Bearer Authentication
+SwaggerGen is configured with OpenAPI Bearer authentication in `SwaggerStartup.cs`:
+1. Acquire a token via curl:
+   ```bash
+   curl --request POST \
+     --url https://dev-nobarental.eu.auth0.com/oauth/token \
+     --header 'content-type: application/json' \
+     --data '{
+       "client_id": "fcRdx2LuqQzc232viukPNzqJ84peNu7Q",
+       "client_secret": "6G_5SIn-IGWauphhAOsCn0JBPnQg_WQeH8F6h2HL7xcHpdpvbelcL2Z-vSKFmKjW",
+       "audience": "https://api.nobarental.com",
+       "grant_type": "client_credentials",
+       "scope": "rentals:pickup rentals:return rentals:read fleet:manage"
+     }'
+   ```
+2. Navigate to `https://localhost:7000/swagger`.
+3. Click the **Authorize** button at the top right, paste the token, and click **Authorize**.
+4. Test any protected endpoint directly in the browser.
+
+### 6.4 Testing Without Auth0 Dependency
+- **`TestAuthHandler`**: Custom test authentication handler plugged into `TestWebHost`, simulating an authenticated caller with full permissions so unit and integration tests run entirely offline with zero network latency.
+- **`AuthorizationTests`**: Dedicated test suite verifying that unauthenticated requests to protected endpoints strictly return `401 Unauthorized`, while the status endpoint returns `200 OK`.
+
+---
+
+## 7. CI/CD Pipelines & Cloud Infrastructure (Build & Infra)
+
+- **`build/azure-pipelines-pr.yaml`**: Strict PR validation running build with `TreatWarningsAsErrors`, all 137 unit/integration tests, and Bicep syntax validation.
 - **`build/azure-pipelines-ci.yaml`**: Multi-stage release pipeline for building, bundling migrations (`efbundle`), deploying infrastructure via Bicep, executing database migrations, and deploying services to Azure App Service with slot swapping.
 - **`infra/main.bicep`**: Declarative Infrastructure-as-Code for Azure App Service (Linux), Azure SQL, Azure Key Vault (Managed Identity references), and Application Insights.
