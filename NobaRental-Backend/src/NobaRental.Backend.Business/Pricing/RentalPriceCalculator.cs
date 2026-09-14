@@ -1,6 +1,7 @@
 using NobaRental.Backend.Domain.Exceptions;
 using NobaRental.Backend.Domain.Values;
 using System.Collections.Frozen;
+using NobaRental.Backend.Domain.Pricing;
 
 namespace NobaRental.Backend.Business.Pricing;
 

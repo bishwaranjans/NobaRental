@@ -7,6 +7,7 @@ using NobaRental.Backend.Data.Entities.Values;
 using NobaRental.Backend.Domain;
 using NobaRental.Backend.Domain.Exceptions;
 using NobaRental.Backend.Domain.Models;
+using NobaRental.Backend.Domain.Pricing;
 using NobaRental.Backend.Domain.Values;
 
 namespace NobaRental.Backend.Business.Api;

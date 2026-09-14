@@ -1,3 +1,4 @@
+using NobaRental.Backend.Domain.Pricing;
 using NobaRental.Backend.Domain.Values;
 
 namespace NobaRental.Backend.Business.Pricing.Strategies;

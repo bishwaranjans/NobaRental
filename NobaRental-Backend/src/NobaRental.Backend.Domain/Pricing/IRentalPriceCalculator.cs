@@ -1,6 +1,6 @@
 using NobaRental.Backend.Domain.Values;
 
-namespace NobaRental.Backend.Business.Pricing;
+namespace NobaRental.Backend.Domain.Pricing;
 
 /// <summary>
 /// Service contract for calculating vehicle rental prices based on category strategies.
