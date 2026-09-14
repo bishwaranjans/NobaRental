@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.StackExchange.Redis" />
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" />
@@ -15,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="RedisRateLimiting.AspNetCore" />
     <PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Mvc" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>

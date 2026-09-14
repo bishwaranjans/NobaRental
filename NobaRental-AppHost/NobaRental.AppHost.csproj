@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Redis" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\NobaRental-Backend\src\NobaRental.Backend.WebApi\NobaRental.Backend.WebApi.csproj" />
     <ProjectReference Include="..\NobaRental-Frontend\src\NobaRental.Frontend.Server\NobaRental.Frontend.Server.csproj" />
   </ItemGroup>

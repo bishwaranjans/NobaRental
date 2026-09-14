@@ -21,6 +21,11 @@ services.AddSingleton(settings);
 services.AddSingleton(TimeProvider.System);
 builder.AddServiceDefaults();
 
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("redis")))
+{
+    builder.AddRedisClient("redis");
+}
+
 services.AddDbContextPool<NobaRentalDbContext>((sp, options) => options
     .UseAzureSql(settings.ConnectionStrings.NobaRental, x => x.WithDefaultOptions()));
 
