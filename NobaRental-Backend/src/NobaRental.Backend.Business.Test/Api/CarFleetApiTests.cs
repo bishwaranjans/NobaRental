@@ -24,6 +24,10 @@ public sealed class CarFleetApiTests : IDisposable
         _ctx.Stations.AddRange(
             new StationEntity { Code = "OSL", Name = "Oslo Airport", City = "Oslo", IsActive = true },
             new StationEntity { Code = "BGO", Name = "Bergen Airport", City = "Bergen", IsActive = true });
+        _ctx.CarCategories.AddRange(
+            new CarCategoryEntity { Code = "SMALL", Name = "Small car", DayMultiplier = 1.0m, KmMultiplier = 0.0m, ChargesKilometers = false, IsActive = true },
+            new CarCategoryEntity { Code = "COMBI", Name = "Combi", DayMultiplier = 1.3m, KmMultiplier = 1.0m, ChargesKilometers = true, IsActive = true },
+            new CarCategoryEntity { Code = "TRUCK", Name = "Truck", DayMultiplier = 1.5m, KmMultiplier = 1.5m, ChargesKilometers = true, IsActive = true });
         _ctx.SaveChanges();
 
         _api = new CarFleetApi(_ctx);
@@ -37,11 +41,11 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task RegisterCar_Success_AddsCarWithAvailableStatusAndStation()
     {
-        var car = await _api.RegisterCar("bt12345", CarCategory.SmallCar, 1500, "OSL", 500m, cancellationToken: Token);
+        var car = await _api.RegisterCar("bt12345", "SMALL", 1500, "OSL", 500m, cancellationToken: Token);
 
         Assert.NotNull(car);
         Assert.Equal("BT12345", car.RegistrationNumber);
-        Assert.Equal(CarCategory.SmallCar, car.Category);
+        Assert.Equal("SMALL", car.CategoryCode);
         Assert.Equal(1500, car.CurrentMeterReadingKm);
         Assert.Equal("OSL", car.CurrentStationCode);
         Assert.Equal(CarStatus.Available, car.Status);
@@ -58,7 +62,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task RegisterCar_SmallCar_EnforcesZeroKmPriceEvenWhenSpecified()
     {
-        var car = await _api.RegisterCar("EV99999", CarCategory.SmallCar, 1000, "OSL", 450m, baseKmPrice: 15m, Token);
+        var car = await _api.RegisterCar("EV99999", "SMALL", 1000, "OSL", 450m, baseKmPrice: 15m, Token);
 
         Assert.Equal(0m, car.BaseKmPrice);
 
@@ -69,11 +73,11 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task RegisterCar_CombiAndTruck_PersistsCustomRates()
     {
-        var combi = await _api.RegisterCar("CB55555", CarCategory.Combi, 2000, "OSL", 750m, baseKmPrice: 3.5m, Token);
+        var combi = await _api.RegisterCar("CB55555", "COMBI", 2000, "OSL", 750m, baseKmPrice: 3.5m, Token);
         Assert.Equal(750m, combi.BaseDayRental);
         Assert.Equal(3.5m, combi.BaseKmPrice);
 
-        var truck = await _api.RegisterCar("TR77777", CarCategory.Truck, 5000, "BGO", 1300m, baseKmPrice: 5.0m, Token);
+        var truck = await _api.RegisterCar("TR77777", "TRUCK", 5000, "BGO", 1300m, baseKmPrice: 5.0m, Token);
         Assert.Equal(1300m, truck.BaseDayRental);
         Assert.Equal(5.0m, truck.BaseKmPrice);
     }
@@ -82,19 +86,19 @@ public sealed class CarFleetApiTests : IDisposable
     public async Task RegisterCar_ZeroOrNegativeDayRate_ThrowsArgumentOutOfRangeException()
     {
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            _api.RegisterCar("BT00000", CarCategory.SmallCar, 1000, "OSL", 0m, cancellationToken: Token));
+            _api.RegisterCar("BT00000", "SMALL", 1000, "OSL", 0m, cancellationToken: Token));
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            _api.RegisterCar("BT00001", CarCategory.SmallCar, 1000, "OSL", -100m, cancellationToken: Token));
+            _api.RegisterCar("BT00001", "SMALL", 1000, "OSL", -100m, cancellationToken: Token));
     }
 
     [Fact]
     public async Task RegisterCar_DuplicatePlate_ThrowsInvalidRentalOperationException()
     {
-        await _api.RegisterCar("BT12345", CarCategory.SmallCar, 1500, "OSL", 500m, cancellationToken: Token);
+        await _api.RegisterCar("BT12345", "SMALL", 1500, "OSL", 500m, cancellationToken: Token);
 
         var ex = await Assert.ThrowsAsync<InvalidRentalOperationException>(() =>
-            _api.RegisterCar("bt12345", CarCategory.Combi, 2000, "OSL", 600m, cancellationToken: Token));
+            _api.RegisterCar("bt12345", "COMBI", 2000, "OSL", 600m, cancellationToken: Token));
 
         Assert.Contains("already exists", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -103,14 +107,14 @@ public sealed class CarFleetApiTests : IDisposable
     public async Task RegisterCar_NegativeMeterReading_ThrowsArgumentOutOfRangeException()
     {
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            _api.RegisterCar("BT99999", CarCategory.Truck, -10, "OSL", 1000m, cancellationToken: Token));
+            _api.RegisterCar("BT99999", "TRUCK", -10, "OSL", 1000m, cancellationToken: Token));
     }
 
     [Fact]
     public async Task GetAllCars_ReturnsAllVehiclesSortedByPlate()
     {
-        await _api.RegisterCar("ZZ99999", CarCategory.Truck, 50000, "OSL", 1200m, cancellationToken: Token);
-        await _api.RegisterCar("AA11111", CarCategory.SmallCar, 1000, "OSL", 500m, cancellationToken: Token);
+        await _api.RegisterCar("ZZ99999", "TRUCK", 50000, "OSL", 1200m, cancellationToken: Token);
+        await _api.RegisterCar("AA11111", "SMALL", 1000, "OSL", 500m, cancellationToken: Token);
 
         var all = await _api.GetAllCars(Token);
 
@@ -122,9 +126,9 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task GetCars_ServerPaginationAndFiltering_ReturnsPagedResult()
     {
-        await _api.RegisterCar("CAR001", CarCategory.SmallCar, 1000, "OSL", 500m, cancellationToken: Token);
-        await _api.RegisterCar("CAR002", CarCategory.Combi, 2000, "BGO", 600m, cancellationToken: Token);
-        await _api.RegisterCar("CAR003", CarCategory.Truck, 3000, "OSL", 1000m, cancellationToken: Token);
+        await _api.RegisterCar("CAR001", "SMALL", 1000, "OSL", 500m, cancellationToken: Token);
+        await _api.RegisterCar("CAR002", "COMBI", 2000, "BGO", 600m, cancellationToken: Token);
+        await _api.RegisterCar("CAR003", "TRUCK", 3000, "OSL", 1000m, cancellationToken: Token);
 
         var pagedOsl = await _api.GetCars(pageNumber: 1, pageSize: 10, stationCode: "OSL", cancellationToken: Token);
         Assert.Equal(2, pagedOsl.TotalCount);
@@ -138,7 +142,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task DeleteCar_Available_DecommissionsAndSoftDeletesCar()
     {
-        await _api.RegisterCar("DEL999", CarCategory.SmallCar, 5000, "OSL", 500m, cancellationToken: Token);
+        await _api.RegisterCar("DEL999", "SMALL", 5000, "OSL", 500m, cancellationToken: Token);
 
         await _api.DeleteCar("DEL999", Token);
 
@@ -154,7 +158,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task DeleteCar_Rented_ThrowsInvalidRentalOperationException()
     {
-        var car = await _api.RegisterCar("RENT11", CarCategory.SmallCar, 5000, "OSL", 500m, cancellationToken: Token);
+        var car = await _api.RegisterCar("RENT11", "SMALL", 5000, "OSL", 500m, cancellationToken: Token);
         var dbCar = await _ctx.Cars.SingleAsync(c => c.RegistrationNumber == car.RegistrationNumber, Token);
         dbCar.Status = CarStatusValue.Rented;
         await _ctx.SaveChangesAsync(Token);
@@ -168,11 +172,11 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task GetAvailableCars_FiltersOnlyAvailable()
     {
-        var available = await _api.RegisterCar("AV11111", CarCategory.SmallCar, 1000, "OSL", 500m, cancellationToken: Token);
+        var available = await _api.RegisterCar("AV11111", "SMALL", 1000, "OSL", 500m, cancellationToken: Token);
         var rentedEntity = new CarEntity
         {
             RegistrationNumber = "RN22222",
-            Category = CarCategoryValue.Combi,
+            CategoryCode = "COMBI",
             CurrentMeterReadingKm = 2000,
             CurrentStationCode = "OSL",
             BaseDayRental = 700m,
@@ -182,7 +186,7 @@ public sealed class CarFleetApiTests : IDisposable
         _ctx.Cars.Add(rentedEntity);
         await _ctx.SaveChangesAsync(Token);
 
-        var availableList = await _api.GetAvailableCars(stationCode: null, category: null, cancellationToken: Token);
+        var availableList = await _api.GetAvailableCars(stationCode: null, categoryCode: null, cancellationToken: Token);
 
         var single = Assert.Single(availableList);
         Assert.Equal(available.RegistrationNumber, single.RegistrationNumber);
@@ -191,22 +195,22 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task GetAvailableCars_WithCategoryAndStation_FiltersCorrectly()
     {
-        await _api.RegisterCar("SM11111", CarCategory.SmallCar, 1000, "OSL", 500m, cancellationToken: Token);
-        await _api.RegisterCar("CB22222", CarCategory.Combi, 2000, "OSL", 700m, cancellationToken: Token);
-        await _api.RegisterCar("CB33333", CarCategory.Combi, 3000, "BGO", 700m, cancellationToken: Token);
+        await _api.RegisterCar("SM11111", "SMALL", 1000, "OSL", 500m, cancellationToken: Token);
+        await _api.RegisterCar("CB22222", "COMBI", 2000, "OSL", 700m, cancellationToken: Token);
+        await _api.RegisterCar("CB33333", "COMBI", 3000, "BGO", 700m, cancellationToken: Token);
 
-        var oslCombi = await _api.GetAvailableCars(stationCode: "OSL", category: CarCategory.Combi, cancellationToken: Token);
+        var oslCombi = await _api.GetAvailableCars(stationCode: "OSL", categoryCode: "COMBI", cancellationToken: Token);
 
         var single = Assert.Single(oslCombi);
         Assert.Equal("CB22222", single.RegistrationNumber);
-        Assert.Equal(CarCategory.Combi, single.Category);
+        Assert.Equal("COMBI", single.CategoryCode);
         Assert.Equal("OSL", single.CurrentStationCode);
     }
 
     [Fact]
     public async Task GetCarByRegistrationNumber_Found_ReturnsCar()
     {
-        await _api.RegisterCar("EX12345", CarCategory.Combi, 8000, "OSL", 750m, cancellationToken: Token);
+        await _api.RegisterCar("EX12345", "COMBI", 8000, "OSL", 750m, cancellationToken: Token);
 
         var found = await _api.GetCarByRegistrationNumber("ex12345", Token);
 
@@ -225,7 +229,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task UpdateCarTariff_WhenCarExists_UpdatesRatesSuccessfully()
     {
-        await _api.RegisterCar("TF11111", CarCategory.Combi, 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
+        await _api.RegisterCar("TF11111", "COMBI", 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
 
         var updated = await _api.UpdateCarTariff("TF11111", baseDayRental: 850m, baseKmPrice: 3.5m, cancellationToken: Token);
 
@@ -240,7 +244,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task UpdateCarTariff_WhenSmallCar_ForcesBaseKmPriceToZero()
     {
-        await _api.RegisterCar("SM99999", CarCategory.SmallCar, 1000, "OSL", 400m, cancellationToken: Token);
+        await _api.RegisterCar("SM99999", "SMALL", 1000, "OSL", 400m, cancellationToken: Token);
 
         var updated = await _api.UpdateCarTariff("sm99999", baseDayRental: 550m, baseKmPrice: 10m, cancellationToken: Token);
 
@@ -254,7 +258,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task UpdateCarTariff_WhenCarIsRented_UpdatesRatesSuccessfullyForFutureRentals()
     {
-        await _api.RegisterCar("RN33333", CarCategory.Truck, 5000, "OSL", 1000m, baseKmPrice: 5m, cancellationToken: Token);
+        await _api.RegisterCar("RN33333", "TRUCK", 5000, "OSL", 1000m, baseKmPrice: 5m, cancellationToken: Token);
         var inDb = await _ctx.Cars.SingleAsync(c => c.RegistrationNumber == "RN33333", Token);
         inDb.Status = CarStatusValue.Rented;
         await _ctx.SaveChangesAsync(Token);
@@ -269,7 +273,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task UpdateCarTariff_WhenZeroOrNegativeDayRate_ThrowsArgumentOutOfRangeException()
     {
-        await _api.RegisterCar("TF22222", CarCategory.Combi, 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
+        await _api.RegisterCar("TF22222", "COMBI", 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
             _api.UpdateCarTariff("TF22222", baseDayRental: 0m, cancellationToken: Token));
@@ -280,7 +284,7 @@ public sealed class CarFleetApiTests : IDisposable
     [Fact]
     public async Task UpdateCarTariff_WhenNegativeKmPrice_ThrowsArgumentOutOfRangeException()
     {
-        await _api.RegisterCar("TF33333", CarCategory.Combi, 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
+        await _api.RegisterCar("TF33333", "COMBI", 2000, "OSL", 600m, baseKmPrice: 2m, cancellationToken: Token);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
             _api.UpdateCarTariff("TF33333", baseDayRental: 600m, baseKmPrice: -1m, cancellationToken: Token));

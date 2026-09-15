@@ -40,7 +40,7 @@
                         @foreach (var car in AvailableCars)
                         {
                             <MudSelectItem Value="@car.RegistrationNumber">
-                                @car.RegistrationNumber — @GetCategoryName(car.Category) (@car.CurrentMeterReadingKm km)
+                                @car.RegistrationNumber — @GetCategoryName(car.CategoryCode, car.CategoryName) (@car.CurrentMeterReadingKm km)
                             </MudSelectItem>
                         }
                     </MudSelect>
@@ -62,15 +62,18 @@
                                   Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect @bind-Value="Model.Category"
+                    <MudSelect T="string" @bind-Value="Model.CategoryCode"
                                Label="Car Category"
+                               Required="true"
+                               RequiredError="Car category is required"
                                Disabled="@IsCarSelected"
                                ReadOnly="@IsCarSelected"
                                HelperText="@(IsCarSelected ? "Category locked to registered vehicle" : null)"
                                Variant="Variant.Outlined">
-                        <MudSelectItem Value="CarCategoryDto.SmallCar">Small car</MudSelectItem>
-                        <MudSelectItem Value="CarCategoryDto.Combi">Combi</MudSelectItem>
-                        <MudSelectItem Value="CarCategoryDto.Truck">Truck</MudSelectItem>
+                        @foreach (var category in Categories)
+                        {
+                            <MudSelectItem Value="@category.Code">@category.Name</MudSelectItem>
+                        }
                     </MudSelect>
                 </MudItem>
 
@@ -99,7 +102,7 @@
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Assigned Vehicle Tariff</MudText>
                         <MudText Typo="Typo.body2">
                             <strong>@SelectedCarDayRental.ToString("N2") NOK</strong> / day
-                            @if (Model.Category == CarCategoryDto.SmallCar)
+                            @if (!SelectedCategoryChargesKilometers)
                             {
                                 <span class="text-muted ml-2">(0.00 NOK/km incl.)</span>
                             }
@@ -131,3 +134,6 @@
         </MudButton>
     </DialogActions>
 </MudDialog>
+
+
+

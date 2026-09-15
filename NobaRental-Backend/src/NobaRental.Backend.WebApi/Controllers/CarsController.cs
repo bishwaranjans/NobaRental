@@ -25,7 +25,7 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     {
         var result = await carFleetApi.RegisterCar(
             registrationNumber: request.RegistrationNumber,
-            category: request.Category.MapToDomain(),
+            categoryCode: request.CategoryCode,
             initialMeterReadingKm: request.InitialMeterReadingKm,
             stationCode: request.StationCode,
             baseDayRental: request.BaseDayRental,
@@ -127,11 +127,10 @@ public class CarsController(ICarFleetApi carFleetApi) : ControllerBase
     [ProducesResponseType<IReadOnlyCollection<CarResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAvailable(
         [FromQuery] string? stationCode = null,
-        [FromQuery] CarCategoryDto? category = null,
+        [FromQuery] string? categoryCode = null,
         CancellationToken cancellationToken = default)
     {
-        var domainCategory = category.MapToDomain();
-        var cars = await carFleetApi.GetAvailableCars(stationCode, domainCategory, cancellationToken);
+        var cars = await carFleetApi.GetAvailableCars(stationCode, categoryCode, cancellationToken);
         return Ok(cars.MapToResponse());
     }
 

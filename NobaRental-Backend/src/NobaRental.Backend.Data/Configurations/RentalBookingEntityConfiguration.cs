@@ -25,7 +25,9 @@ public class RentalBookingEntityConfiguration : IEntityTypeConfiguration<RentalB
             .HasFilter("[Status] = 1");
 
         b.Property(x => x.CustomerSsn).HasMaxLength(11).IsRequired();
-        b.Property(x => x.Category).HasConversion<int>().IsRequired();
+        b.Property(x => x.CategoryCode).HasMaxLength(20).IsRequired();
+        b.Property(x => x.AppliedDayMultiplier).HasPrecision(5, 2).IsRequired();
+        b.Property(x => x.AppliedKmMultiplier).HasPrecision(5, 2).IsRequired();
         b.Property(x => x.Status).HasConversion<int>().IsRequired();
         b.Property(x => x.Currency).HasMaxLength(5).IsRequired();
 
@@ -49,6 +51,12 @@ public class RentalBookingEntityConfiguration : IEntityTypeConfiguration<RentalB
         b.HasOne(x => x.PickupStation)
             .WithMany(x => x.PickupBookings)
             .HasForeignKey(x => x.PickupStationCode)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        b.HasOne(x => x.Category)
+            .WithMany(x => x.Bookings)
+            .HasForeignKey(x => x.CategoryCode)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 

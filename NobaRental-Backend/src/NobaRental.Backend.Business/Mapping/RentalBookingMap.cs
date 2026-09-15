@@ -13,7 +13,7 @@ internal static class RentalBookingMap
             BookingNumber: entity.BookingNumber,
             RegistrationNumber: entity.RegistrationNumber,
             CustomerSsn: entity.CustomerSsn,
-            Category: entity.Category.ToDomain(),
+            CategoryCode: entity.CategoryCode,
             PickupStationCode: entity.PickupStationCode,
             PickupDateTime: entity.PickupDateTime,
             PickupMeterReadingKm: entity.PickupMeterReadingKm,
@@ -31,12 +31,17 @@ internal static class RentalBookingMap
             TotalPrice: entity.TotalPrice,
             Currency: entity.Currency,
             Status: entity.Status.ToDomain(),
-            RowVersion: entity.RowVersion);
+            RowVersion: entity.RowVersion,
+            AppliedDayMultiplier: entity.AppliedDayMultiplier,
+            AppliedKmMultiplier: entity.AppliedKmMultiplier,
+            CategoryName: entity.Category?.Name);
 
     public static RentalBookingEntity MapToEntity(
         string registrationNumber,
         string customerSsn,
-        CarCategory category,
+        string categoryCode,
+        decimal appliedDayMultiplier,
+        decimal appliedKmMultiplier,
         string pickupStationCode,
         DateTimeOffset pickupDateTime,
         long pickupMeterReadingKm,
@@ -47,7 +52,9 @@ internal static class RentalBookingMap
         {
             RegistrationNumber = registrationNumber,
             CustomerSsn = customerSsn,
-            Category = category.ToEntity(),
+            CategoryCode = categoryCode.Trim().ToUpperInvariant(),
+            AppliedDayMultiplier = appliedDayMultiplier,
+            AppliedKmMultiplier = appliedKmMultiplier,
             PickupStationCode = pickupStationCode.Trim().ToUpperInvariant(),
             PickupDateTime = pickupDateTime,
             PickupMeterReadingKm = pickupMeterReadingKm,

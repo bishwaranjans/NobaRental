@@ -7,36 +7,6 @@ namespace NobaRental.Backend.Business.Test.Mapping;
 public sealed class EnumMappingTests
 {
     [Theory]
-    [InlineData(CarCategoryValue.SmallCar, CarCategory.SmallCar)]
-    [InlineData(CarCategoryValue.Combi, CarCategory.Combi)]
-    [InlineData(CarCategoryValue.Truck, CarCategory.Truck)]
-    public void CarCategory_ToDomain_MapsCorrectly(CarCategoryValue dataVal, CarCategory expectedDomain)
-    {
-        Assert.Equal(expectedDomain, dataVal.ToDomain());
-    }
-
-    [Theory]
-    [InlineData(CarCategory.SmallCar, CarCategoryValue.SmallCar)]
-    [InlineData(CarCategory.Combi, CarCategoryValue.Combi)]
-    [InlineData(CarCategory.Truck, CarCategoryValue.Truck)]
-    public void CarCategory_ToEntity_MapsCorrectly(CarCategory domain, CarCategoryValue expectedData)
-    {
-        Assert.Equal(expectedData, domain.ToEntity());
-    }
-
-    [Fact]
-    public void CarCategory_ToDomain_ThrowsOnInvalidValue()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ((CarCategoryValue)999).ToDomain());
-    }
-
-    [Fact]
-    public void CarCategory_ToEntity_ThrowsOnInvalidValue()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ((CarCategory)999).ToEntity());
-    }
-
-    [Theory]
     [InlineData(CarStatusValue.Available, CarStatus.Available)]
     [InlineData(CarStatusValue.Rented, CarStatus.Rented)]
     [InlineData(CarStatusValue.Maintenance, CarStatus.Maintenance)]

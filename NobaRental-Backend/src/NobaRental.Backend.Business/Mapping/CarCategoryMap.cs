@@ -1,25 +1,35 @@
-using DataCarCategory = NobaRental.Backend.Data.Entities.Values.CarCategoryValue;
-using DomainCarCategory = NobaRental.Backend.Domain.Values.CarCategory;
+using NobaRental.Backend.Data.Entities;
+using NobaRental.Backend.Domain.Models;
 
 namespace NobaRental.Backend.Business.Mapping;
 
 internal static class CarCategoryMap
 {
-    public static DomainCarCategory ToDomain(this DataCarCategory value) =>
-        value switch
-        {
-            DataCarCategory.SmallCar => DomainCarCategory.SmallCar,
-            DataCarCategory.Combi => DomainCarCategory.Combi,
-            DataCarCategory.Truck => DomainCarCategory.Truck,
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, $"Unsupported CarCategoryValue: {value}")
-        };
+    public static CarCategory Map(this CarCategoryEntity entity) =>
+        new(
+            Code: entity.Code,
+            Name: entity.Name,
+            DayMultiplier: entity.DayMultiplier,
+            KmMultiplier: entity.KmMultiplier,
+            ChargesKilometers: entity.ChargesKilometers,
+            IsActive: entity.IsActive,
+            IsDeleted: entity.IsDeleted,
+            RowVersion: entity.RowVersion);
 
-    public static DataCarCategory ToEntity(this DomainCarCategory category) =>
-        category switch
+    public static CarCategoryEntity MapToEntity(
+        string code,
+        string name,
+        decimal dayMultiplier,
+        decimal kmMultiplier,
+        bool chargesKilometers,
+        bool isActive = true) =>
+        new()
         {
-            DomainCarCategory.SmallCar => DataCarCategory.SmallCar,
-            DomainCarCategory.Combi => DataCarCategory.Combi,
-            DomainCarCategory.Truck => DataCarCategory.Truck,
-            _ => throw new ArgumentOutOfRangeException(nameof(category), category, $"Unsupported CarCategory: {category}")
+            Code = code.Trim().ToUpperInvariant(),
+            Name = name.Trim(),
+            DayMultiplier = dayMultiplier,
+            KmMultiplier = kmMultiplier,
+            ChargesKilometers = chargesKilometers,
+            IsActive = isActive,
         };
 }

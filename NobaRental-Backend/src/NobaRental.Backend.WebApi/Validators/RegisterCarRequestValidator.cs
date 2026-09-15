@@ -26,9 +26,8 @@ public class RegisterCarRequestValidator : AbstractValidator<RegisterCarRequest>
             .GreaterThanOrEqualTo(0)
             .WithMessage("Base km price cannot be negative.");
 
-        RuleFor(x => x.BaseKmPrice)
-            .Equal(0)
-            .When(x => x.Category == Client.Models.Values.CarCategoryDto.SmallCar)
-            .WithMessage("Base km price must be 0 for small cars.");
+        RuleFor(x => x.CategoryCode)
+            .NotEmpty()
+            .MaximumLength(20);
     }
 }

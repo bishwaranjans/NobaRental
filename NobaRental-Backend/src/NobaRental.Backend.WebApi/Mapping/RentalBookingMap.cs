@@ -10,7 +10,7 @@ internal static class RentalBookingMap
             BookingNumber: domain.BookingNumber,
             RegistrationNumber: domain.RegistrationNumber,
             CustomerSsn: MaskSsn(domain.CustomerSsn),
-            Category: domain.Category.MapToResponse(),
+            CategoryCode: domain.CategoryCode,
             PickupStationCode: domain.PickupStationCode,
             PickupDateTime: domain.PickupDateTime,
             PickupMeterReadingKm: domain.PickupMeterReadingKm,
@@ -24,7 +24,10 @@ internal static class RentalBookingMap
             TotalPrice: domain.TotalPrice,
             Currency: domain.Currency,
             Status: domain.Status.MapToResponse(),
-            RowVersion: domain.RowVersion);
+            RowVersion: domain.RowVersion,
+            AppliedDayMultiplier: domain.AppliedDayMultiplier,
+            AppliedKmMultiplier: domain.AppliedKmMultiplier,
+            CategoryName: domain.CategoryName);
 
     public static IReadOnlyCollection<RentalBookingResponse> MapToResponse(this IReadOnlyCollection<RentalBooking> items) =>
         items.Select(x => x.MapToResponse()).ToList();

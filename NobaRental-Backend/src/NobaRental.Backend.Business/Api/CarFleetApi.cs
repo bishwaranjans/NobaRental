@@ -14,22 +14,31 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 {
     public async Task<Car> RegisterCar(
         string registrationNumber,
-        CarCategory category,
+        string categoryCode,
         long initialMeterReadingKm,
         string stationCode,
         decimal baseDayRental,
         decimal baseKmPrice = 0m,
         CancellationToken cancellationToken = default)
     {
-        ValidateRegisterArguments(registrationNumber, stationCode, baseDayRental, baseKmPrice, initialMeterReadingKm);
+        ValidateRegisterArguments(registrationNumber, categoryCode, stationCode, baseDayRental, baseKmPrice, initialMeterReadingKm);
 
-        if (category == CarCategory.SmallCar)
+        var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
+        var normalizedCat = categoryCode.Trim().ToUpperInvariant();
+        var normalizedStation = stationCode.Trim().ToUpperInvariant();
+
+        var category = await dbContext.CarCategories
+            .SingleOrDefaultAsync(c => c.Code == normalizedCat, cancellationToken);
+
+        if (category?.IsActive != true)
+        {
+            throw new InvalidRentalOperationException($"Category '{normalizedCat}' does not exist or is inactive.");
+        }
+
+        if (!category.ChargesKilometers)
         {
             baseKmPrice = 0m;
         }
-
-        var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
-        var normalizedStation = stationCode.Trim().ToUpperInvariant();
 
         var station = await dbContext.Stations
             .SingleOrDefaultAsync(s => s.Code == normalizedStation, cancellationToken);
@@ -47,7 +56,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         {
             if (existing.IsDeleted)
             {
-                ResurrectDeletedCar(existing, category, initialMeterReadingKm, normalizedStation, baseDayRental, baseKmPrice);
+                ResurrectDeletedCar(existing, normalizedCat, initialMeterReadingKm, normalizedStation, baseDayRental, baseKmPrice);
                 await dbContext.SaveChangesAsync(cancellationToken);
                 return existing.Map();
             }
@@ -57,21 +66,22 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
         var entity = CarMap.MapToEntity(
             normalizedReg,
-            category,
+            normalizedCat,
             initialMeterReadingKm,
             normalizedStation,
             baseDayRental,
             baseKmPrice,
             status: CarStatus.Available);
-        await dbContext.Cars.AddAsync(entity, cancellationToken);
+        dbContext.Cars.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return entity.Map();
     }
 
-    private static void ValidateRegisterArguments(string reg, string station, decimal dayPrice, decimal kmPrice, long meter)
+    private static void ValidateRegisterArguments(string reg, string categoryCode, string station, decimal dayPrice, decimal kmPrice, long meter)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reg);
+        ArgumentException.ThrowIfNullOrWhiteSpace(categoryCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(station);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(dayPrice);
         ArgumentOutOfRangeException.ThrowIfNegative(kmPrice);
@@ -81,11 +91,11 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         }
     }
 
-    private static void ResurrectDeletedCar(CarEntity existing, CarCategory category, long meter, string station, decimal dayPrice, decimal kmPrice)
+    private static void ResurrectDeletedCar(CarEntity existing, string categoryCode, long meter, string station, decimal dayPrice, decimal kmPrice)
     {
         existing.IsDeleted = false;
         existing.DeletedAt = null;
-        existing.Category = category.ToEntity();
+        existing.CategoryCode = categoryCode;
         existing.CurrentMeterReadingKm = meter;
         existing.CurrentStationCode = station;
         existing.BaseDayRental = dayPrice;
@@ -136,10 +146,11 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
         var car = await dbContext.Cars
+            .Include(c => c.Category)
             .SingleOrDefaultAsync(c => c.RegistrationNumber == normalizedReg, cancellationToken)
             ?? throw new InvalidRentalOperationException($"Car '{normalizedReg}' is not registered in the fleet.");
 
-        if (car.Category == CarCategoryValue.SmallCar)
+        if (car.Category?.ChargesKilometers == false)
         {
             baseKmPrice = 0m;
         }
@@ -168,6 +179,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
     {
         var entities = await dbContext.Cars
             .AsNoTracking()
+            .Include(c => c.Category)
             .OrderBy(c => c.RegistrationNumber)
             .ToListAsync(cancellationToken);
 
@@ -184,7 +196,10 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
         bool sortDescending = false,
         CancellationToken cancellationToken = default)
     {
-        var query = dbContext.Cars.AsNoTracking();
+        var query = dbContext.Cars
+            .AsNoTracking()
+            .Include(c => c.Category)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -221,11 +236,12 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
     public async Task<IReadOnlyCollection<Car>> GetAvailableCars(
         string? stationCode = null,
-        CarCategory? category = null,
+        string? categoryCode = null,
         CancellationToken cancellationToken = default)
     {
         var query = dbContext.Cars
             .AsNoTracking()
+            .Include(c => c.Category)
             .Where(c => c.Status == CarStatusValue.Available);
 
         if (!string.IsNullOrWhiteSpace(stationCode))
@@ -234,10 +250,10 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
             query = query.Where(c => c.CurrentStationCode == normalizedStation);
         }
 
-        if (category.HasValue)
+        if (!string.IsNullOrWhiteSpace(categoryCode))
         {
-            var catVal = category.Value.ToEntity();
-            query = query.Where(c => c.Category == catVal);
+            var normalizedCat = categoryCode.Trim().ToUpperInvariant();
+            query = query.Where(c => c.CategoryCode == normalizedCat);
         }
 
         var entities = await query
@@ -255,6 +271,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
 
         var entity = await dbContext.Cars
             .AsNoTracking()
+            .Include(c => c.Category)
             .FirstOrDefaultAsync(c => c.RegistrationNumber == normalizedReg, cancellationToken);
 
         return entity?.Map();
@@ -263,7 +280,7 @@ public class CarFleetApi(NobaRentalDbContext dbContext) : ICarFleetApi
     private static IQueryable<CarEntity> ApplySorting(IQueryable<CarEntity> query, string? sortBy, bool sortDescending) =>
         sortBy?.ToLowerInvariant() switch
         {
-            "category" => sortDescending ? query.OrderByDescending(c => c.Category) : query.OrderBy(c => c.Category),
+            "category" => sortDescending ? query.OrderByDescending(c => c.CategoryCode) : query.OrderBy(c => c.CategoryCode),
             "meter" or "odometer" => sortDescending ? query.OrderByDescending(c => c.CurrentMeterReadingKm) : query.OrderBy(c => c.CurrentMeterReadingKm),
             "status" => sortDescending ? query.OrderByDescending(c => c.Status) : query.OrderBy(c => c.Status),
             "station" => sortDescending ? query.OrderByDescending(c => c.CurrentStationCode) : query.OrderBy(c => c.CurrentStationCode),

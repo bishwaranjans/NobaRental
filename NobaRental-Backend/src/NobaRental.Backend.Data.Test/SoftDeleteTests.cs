@@ -33,7 +33,7 @@ public sealed class SoftDeleteTests
         var car = new CarEntity
         {
             RegistrationNumber = "SD10001",
-            Category = CarCategoryValue.SmallCar,
+            CategoryCode = "SMALL",
             CurrentMeterReadingKm = 1000,
             Status = CarStatusValue.Available,
             CurrentStationCode = "OSL",
@@ -65,7 +65,7 @@ public sealed class SoftDeleteTests
         var activeCar = new CarEntity
         {
             RegistrationNumber = "ACT001",
-            Category = CarCategoryValue.SmallCar,
+            CategoryCode = "SMALL",
             CurrentMeterReadingKm = 500,
             Status = CarStatusValue.Available,
             CurrentStationCode = "OSL",
@@ -74,7 +74,7 @@ public sealed class SoftDeleteTests
         var deletedCar = new CarEntity
         {
             RegistrationNumber = "DEL001",
-            Category = CarCategoryValue.Combi,
+            CategoryCode = "COMBI",
             CurrentMeterReadingKm = 800,
             Status = CarStatusValue.Decommissioned,
             CurrentStationCode = "OSL",

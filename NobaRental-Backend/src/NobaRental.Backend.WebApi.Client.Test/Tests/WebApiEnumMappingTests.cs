@@ -7,46 +7,6 @@ namespace NobaRental.Backend.WebApi.Client.Test.Tests;
 public sealed class WebApiEnumMappingTests
 {
     [Theory]
-    [InlineData(CarCategoryDto.SmallCar, CarCategory.SmallCar)]
-    [InlineData(CarCategoryDto.Combi, CarCategory.Combi)]
-    [InlineData(CarCategoryDto.Truck, CarCategory.Truck)]
-    public void CarCategory_MapToDomain_MapsCorrectly(CarCategoryDto dto, CarCategory expectedDomain)
-    {
-        Assert.Equal(expectedDomain, dto.MapToDomain());
-    }
-
-    [Theory]
-    [InlineData(CarCategory.SmallCar, CarCategoryDto.SmallCar)]
-    [InlineData(CarCategory.Combi, CarCategoryDto.Combi)]
-    [InlineData(CarCategory.Truck, CarCategoryDto.Truck)]
-    public void CarCategory_MapToResponse_MapsCorrectly(CarCategory domain, CarCategoryDto expectedDto)
-    {
-        Assert.Equal(expectedDto, domain.MapToResponse());
-    }
-
-    [Fact]
-    public void CarCategory_MapToDomain_Nullable_MapsCorrectly()
-    {
-        CarCategoryDto? nullDto = null;
-        Assert.Null(nullDto.MapToDomain());
-
-        CarCategoryDto? nonNullDto = CarCategoryDto.SmallCar;
-        Assert.Equal(CarCategory.SmallCar, nonNullDto.MapToDomain());
-    }
-
-    [Fact]
-    public void CarCategory_MapToDomain_ThrowsOnInvalidValue()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ((CarCategoryDto)999).MapToDomain());
-    }
-
-    [Fact]
-    public void CarCategory_MapToResponse_ThrowsOnInvalidValue()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => ((CarCategory)999).MapToResponse());
-    }
-
-    [Theory]
     [InlineData(CarStatusDto.Available, CarStatus.Available)]
     [InlineData(CarStatusDto.Rented, CarStatus.Rented)]
     [InlineData(CarStatusDto.Maintenance, CarStatus.Maintenance)]

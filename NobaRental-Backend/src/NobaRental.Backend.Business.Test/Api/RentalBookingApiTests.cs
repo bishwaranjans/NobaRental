@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NobaRental.Backend.Business.Api;
-using NobaRental.Backend.Business.Mapping;
 using NobaRental.Backend.Business.Pricing;
-using NobaRental.Backend.Business.Pricing.Strategies;
 using NobaRental.Backend.Data;
 using NobaRental.Backend.Data.Entities;
 using NobaRental.Backend.Data.Entities.Values;
@@ -27,30 +25,30 @@ public sealed class RentalBookingApiTests : IDisposable
         _ctx.Stations.AddRange(
             new StationEntity { Code = "OSL", Name = "Oslo Airport", City = "Oslo", IsActive = true },
             new StationEntity { Code = "BGO", Name = "Bergen Airport", City = "Bergen", IsActive = true });
+        _ctx.CarCategories.AddRange(
+            new CarCategoryEntity { Code = "SMALL", Name = "Small car", DayMultiplier = 1.0m, KmMultiplier = 0.0m, ChargesKilometers = false, IsActive = true },
+            new CarCategoryEntity { Code = "COMBI", Name = "Combi", DayMultiplier = 1.3m, KmMultiplier = 1.0m, ChargesKilometers = true, IsActive = true },
+            new CarCategoryEntity { Code = "TRUCK", Name = "Truck", DayMultiplier = 1.5m, KmMultiplier = 1.5m, ChargesKilometers = true, IsActive = true });
         _ctx.SaveChanges();
 
-        var calculator = new RentalPriceCalculator([
-            new SmallCarPricingStrategy(),
-            new CombiPricingStrategy(),
-            new TruckPricingStrategy()
-        ]);
-        _api = new RentalBookingApi(_ctx, calculator);
+        _api = new RentalBookingApi(_ctx, new RentalPriceCalculator());
     }
 
-    private void EnsureCar(string registrationNumber, CarCategory category, long meterReading = 0, string stationCode = "OSL", decimal baseDayRental = 500m, decimal baseKmPrice = 2m)
+    private void EnsureCar(string registrationNumber, string categoryCode, long meterReading = 0, string stationCode = "OSL", decimal baseDayRental = 500m, decimal baseKmPrice = 2m)
     {
         var normalized = registrationNumber.Trim().ToUpperInvariant();
+        var normalizedCat = categoryCode.Trim().ToUpperInvariant();
         var existing = _ctx.Cars.Find(normalized);
         if (existing is null)
         {
             _ctx.Cars.Add(new CarEntity
             {
                 RegistrationNumber = normalized,
-                Category = category.ToEntity(),
+                CategoryCode = normalizedCat,
                 CurrentMeterReadingKm = meterReading,
                 CurrentStationCode = stationCode,
                 BaseDayRental = baseDayRental,
-                BaseKmPrice = category == CarCategory.SmallCar ? 0m : baseKmPrice,
+                BaseKmPrice = string.Equals(normalizedCat, "SMALL", StringComparison.OrdinalIgnoreCase) ? 0m : baseKmPrice,
                 Status = CarStatusValue.Available
             });
             _ctx.SaveChanges();
@@ -65,13 +63,13 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_Success_PersistsBookingWithActiveStatus()
     {
-        EnsureCar("ev12345", CarCategory.SmallCar, 15000, baseDayRental: 500m, baseKmPrice: 0m);
+        EnsureCar("ev12345", "SMALL", 15000, baseDayRental: 500m, baseKmPrice: 0m);
         var pickupTime = new DateTimeOffset(2026, 9, 12, 9, 0, 0, TimeSpan.Zero);
 
         var result = await _api.RegisterPickup(
             registrationNumber: "ev12345",
             customerSsn: "12345678901",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 15000,
@@ -81,7 +79,7 @@ public sealed class RentalBookingApiTests : IDisposable
         Assert.True(result.BookingNumber > 0);
         Assert.Equal("EV12345", result.RegistrationNumber);
         Assert.Equal("12345678901", result.CustomerSsn);
-        Assert.Equal(CarCategory.SmallCar, result.Category);
+        Assert.Equal("SMALL", result.CategoryCode);
         Assert.Equal("OSL", result.PickupStationCode);
         Assert.Equal(RentalStatus.Active, result.Status);
         Assert.Equal("NOK", result.Currency);
@@ -99,14 +97,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_AutoGeneratesUniqueSequentialBookingNumbers()
     {
-        EnsureCar("BT10001", CarCategory.SmallCar, 1000);
-        EnsureCar("BT20002", CarCategory.Combi, 5000);
+        EnsureCar("BT10001", "SMALL", 1000);
+        EnsureCar("BT20002", "COMBI", 5000);
         var pickupTime = new DateTimeOffset(2026, 9, 12, 9, 0, 0, TimeSpan.Zero);
 
         var first = await _api.RegisterPickup(
             registrationNumber: "BT10001",
             customerSsn: "11111111111",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 1000,
@@ -115,7 +113,7 @@ public sealed class RentalBookingApiTests : IDisposable
         var second = await _api.RegisterPickup(
             registrationNumber: "BT20002",
             customerSsn: "22222222222",
-            category: CarCategory.Combi,
+            categoryCode: "COMBI",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 5000,
@@ -128,14 +126,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_CarAtDifferentStation_ThrowsInvalidRentalOperationException()
     {
-        EnsureCar("BGO_CAR", CarCategory.SmallCar, 1000, stationCode: "BGO");
+        EnsureCar("BGO_CAR", "SMALL", 1000, stationCode: "BGO");
         var pickupTime = new DateTimeOffset(2026, 9, 12, 9, 0, 0, TimeSpan.Zero);
 
         var ex = await Assert.ThrowsAsync<InvalidRentalOperationException>(() =>
             _api.RegisterPickup(
                 registrationNumber: "BGO_CAR",
                 customerSsn: "11111111111",
-                category: CarCategory.SmallCar,
+                categoryCode: "SMALL",
                 pickupStationCode: "OSL",
                 pickupDateTime: pickupTime,
                 pickupMeterReadingKm: 1000,
@@ -147,13 +145,13 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_CarAlreadyHasActiveRental_ThrowsInvalidRentalOperationException()
     {
-        EnsureCar("EV99999", CarCategory.SmallCar, 10000);
+        EnsureCar("EV99999", "SMALL", 10000);
         var pickupTime = new DateTimeOffset(2026, 9, 12, 9, 0, 0, TimeSpan.Zero);
 
         await _api.RegisterPickup(
             registrationNumber: "EV99999",
             customerSsn: "11111111111",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 10000,
@@ -163,7 +161,7 @@ public sealed class RentalBookingApiTests : IDisposable
             _api.RegisterPickup(
                 registrationNumber: "EV99999",
                 customerSsn: "22222222222",
-                category: CarCategory.SmallCar,
+                categoryCode: "SMALL",
                 pickupStationCode: "OSL",
                 pickupDateTime: pickupTime.AddHours(1),
                 pickupMeterReadingKm: 10000,
@@ -175,14 +173,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_SameCarCanBeRentedAfterPreviousCompleted()
     {
-        EnsureCar("EV88888", CarCategory.SmallCar, 10000);
+        EnsureCar("EV88888", "SMALL", 10000);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(1);
 
         var firstBooking = await _api.RegisterPickup(
             registrationNumber: "EV88888",
             customerSsn: "11111111111",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 10000,
@@ -198,7 +196,7 @@ public sealed class RentalBookingApiTests : IDisposable
         var secondBooking = await _api.RegisterPickup(
             registrationNumber: "EV88888",
             customerSsn: "22222222222",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: returnTime.AddHours(2),
             pickupMeterReadingKm: 10150,
@@ -212,14 +210,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterReturn_SmallCar_CalculatesPriceAndCompletesBooking()
     {
-        EnsureCar("EV11111", CarCategory.SmallCar, 20000, baseDayRental: 480m);
+        EnsureCar("EV11111", "SMALL", 20000, baseDayRental: 480m);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 10, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(3);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "EV11111",
             customerSsn: "12345678901",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 20000,
@@ -242,13 +240,13 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterReturn_OneWayRental_RelocatesVehicleToReturnStation()
     {
-        EnsureCar("ONEWAY1", CarCategory.Combi, 30000, stationCode: "OSL", baseDayRental: 600m, baseKmPrice: 3m);
+        EnsureCar("ONEWAY1", "COMBI", 30000, stationCode: "OSL", baseDayRental: 600m, baseKmPrice: 3m);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 10, 0, 0, TimeSpan.Zero);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "ONEWAY1",
             customerSsn: "12345678901",
-            category: CarCategory.Combi,
+            categoryCode: "COMBI",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 30000,
@@ -272,14 +270,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterReturn_Combi_CalculatesPriceCorrectly()
     {
-        EnsureCar("EV22222", CarCategory.Combi, 50000, baseDayRental: 600m, baseKmPrice: 3m);
+        EnsureCar("EV22222", "COMBI", 50000, baseDayRental: 600m, baseKmPrice: 3m);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 8, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(2);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "EV22222",
             customerSsn: "12345678901",
-            category: CarCategory.Combi,
+            categoryCode: "COMBI",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 50000,
@@ -302,14 +300,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterReturn_Truck_CalculatesPriceCorrectly()
     {
-        EnsureCar("BT33333", CarCategory.Truck, 80000, baseDayRental: 1000m, baseKmPrice: 4m);
+        EnsureCar("BT33333", "TRUCK", 80000, baseDayRental: 1000m, baseKmPrice: 4m);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 8, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(2);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "BT33333",
             customerSsn: "12345678901",
-            category: CarCategory.Truck,
+            categoryCode: "TRUCK",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 80000,
@@ -344,14 +342,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterReturn_AlreadyCompleted_ThrowsInvalidRentalOperationException()
     {
-        EnsureCar("EV44444", CarCategory.SmallCar, 10000);
+        EnsureCar("EV44444", "SMALL", 10000);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 10, 0, 0, TimeSpan.Zero);
         var returnTime = pickupTime.AddDays(1);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "EV44444",
             customerSsn: "12345678901",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 10000,
@@ -378,12 +376,12 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task GetBookingByNumber_ReturnsBooking_WhenFound()
     {
-        EnsureCar("EV55555", CarCategory.Combi, 30000);
+        EnsureCar("EV55555", "COMBI", 30000);
         var pickupTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
         var created = await _api.RegisterPickup(
             registrationNumber: "EV55555",
             customerSsn: "12345678901",
-            category: CarCategory.Combi,
+            categoryCode: "COMBI",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 30000,
@@ -394,7 +392,7 @@ public sealed class RentalBookingApiTests : IDisposable
         Assert.NotNull(booking);
         Assert.Equal(created.BookingNumber, booking.BookingNumber);
         Assert.Equal("EV55555", booking.RegistrationNumber);
-        Assert.Equal(CarCategory.Combi, booking.Category);
+        Assert.Equal("COMBI", booking.CategoryCode);
     }
 
     [Fact]
@@ -407,12 +405,12 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task GetBookings_ServerPaginationAndFiltering_ReturnsPagedResult()
     {
-        EnsureCar("PAG1", CarCategory.SmallCar, 1000);
-        EnsureCar("PAG2", CarCategory.Combi, 2000, stationCode: "BGO");
+        EnsureCar("PAG1", "SMALL", 1000);
+        EnsureCar("PAG2", "COMBI", 2000, stationCode: "BGO");
         var time = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
 
-        await _api.RegisterPickup("PAG1", "12345678901", CarCategory.SmallCar, "OSL", time, 1000, Token);
-        await _api.RegisterPickup("PAG2", "12345678902", CarCategory.Combi, "BGO", time.AddHours(1), 2000, Token);
+        await _api.RegisterPickup("PAG1", "12345678901", "SMALL", "OSL", time, 1000, Token);
+        await _api.RegisterPickup("PAG2", "12345678902", "COMBI", "BGO", time.AddHours(1), 2000, Token);
 
         var pagedBgo = await _api.GetBookings(pageNumber: 1, pageSize: 10, stationCode: "BGO", cancellationToken: Token);
         Assert.Equal(1, pagedBgo.TotalCount);
@@ -426,12 +424,12 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task GetAllBookings_ReturnsAllBookings()
     {
-        EnsureCar("EV66661", CarCategory.SmallCar, 1000);
-        EnsureCar("EV66662", CarCategory.Combi, 2000);
+        EnsureCar("EV66661", "SMALL", 1000);
+        EnsureCar("EV66662", "COMBI", 2000);
         var time = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
 
-        await _api.RegisterPickup("EV66661", "12345678901", CarCategory.SmallCar, "OSL", time, 1000, Token);
-        await _api.RegisterPickup("EV66662", "12345678902", CarCategory.Combi, "OSL", time.AddHours(1), 2000, Token);
+        await _api.RegisterPickup("EV66661", "12345678901", "SMALL", "OSL", time, 1000, Token);
+        await _api.RegisterPickup("EV66662", "12345678902", "COMBI", "OSL", time.AddHours(1), 2000, Token);
 
         var all = await _api.GetAllBookings(Token);
         Assert.Equal(2, all.Count);
@@ -440,12 +438,12 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task GetActiveBookings_ReturnsOnlyActiveBookings()
     {
-        EnsureCar("EV77771", CarCategory.SmallCar, 1000);
-        EnsureCar("EV77772", CarCategory.Combi, 2000);
+        EnsureCar("EV77771", "SMALL", 1000);
+        EnsureCar("EV77772", "COMBI", 2000);
         var time = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
 
-        var first = await _api.RegisterPickup("EV77771", "12345678901", CarCategory.SmallCar, "OSL", time, 1000, Token);
-        var second = await _api.RegisterPickup("EV77772", "12345678902", CarCategory.Combi, "OSL", time.AddHours(1), 2000, Token);
+        var first = await _api.RegisterPickup("EV77771", "12345678901", "SMALL", "OSL", time, 1000, Token);
+        var second = await _api.RegisterPickup("EV77772", "12345678902", "COMBI", "OSL", time.AddHours(1), 2000, Token);
 
         await _api.RegisterReturn(first.BookingNumber, "OSL", time.AddDays(1), 1100, cancellationToken: Token);
 
@@ -464,7 +462,7 @@ public sealed class RentalBookingApiTests : IDisposable
             _api.RegisterPickup(
                 registrationNumber: "UNREGISTERED",
                 customerSsn: "12345678901",
-                category: CarCategory.SmallCar,
+                categoryCode: "SMALL",
                 pickupStationCode: "OSL",
                 pickupDateTime: pickupTime,
                 pickupMeterReadingKm: 1000,
@@ -476,14 +474,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_CarCategoryMismatch_ThrowsInvalidRentalOperationException()
     {
-        EnsureCar("CAT_MISMATCH", CarCategory.Truck, 5000);
+        EnsureCar("CAT_MISMATCH", "TRUCK", 5000);
         var pickupTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
 
         var ex = await Assert.ThrowsAsync<InvalidRentalOperationException>(() =>
             _api.RegisterPickup(
                 registrationNumber: "CAT_MISMATCH",
                 customerSsn: "12345678901",
-                category: CarCategory.SmallCar,
+                categoryCode: "SMALL",
                 pickupStationCode: "OSL",
                 pickupDateTime: pickupTime,
                 pickupMeterReadingKm: 5000,
@@ -495,14 +493,14 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_PickupMeterReadingLessThanCarMeterReading_ThrowsInvalidRentalOperationException()
     {
-        EnsureCar("ODOMETER_CHECK", CarCategory.Combi, 25000);
+        EnsureCar("ODOMETER_CHECK", "COMBI", 25000);
         var pickupTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
 
         var ex = await Assert.ThrowsAsync<InvalidRentalOperationException>(() =>
             _api.RegisterPickup(
                 registrationNumber: "ODOMETER_CHECK",
                 customerSsn: "12345678901",
-                category: CarCategory.Combi,
+                categoryCode: "COMBI",
                 pickupStationCode: "OSL",
                 pickupDateTime: pickupTime,
                 pickupMeterReadingKm: 24000,
@@ -514,13 +512,13 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task RegisterPickup_And_RegisterReturn_TransitionsCarStatusAndOdometer()
     {
-        EnsureCar("LIFECYCLE_01", CarCategory.SmallCar, 12000);
+        EnsureCar("LIFECYCLE_01", "SMALL", 12000);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "LIFECYCLE_01",
             customerSsn: "12345678901",
-            category: CarCategory.SmallCar,
+            categoryCode: "SMALL",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 12000,
@@ -539,13 +537,13 @@ public sealed class RentalBookingApiTests : IDisposable
     [Fact]
     public async Task EstimatePrice_ActiveBooking_ReturnsCalculatedEstimate()
     {
-        EnsureCar("EST_01", CarCategory.Combi, 10000, baseDayRental: 600m, baseKmPrice: 5m);
+        EnsureCar("EST_01", "COMBI", 10000, baseDayRental: 600m, baseKmPrice: 5m);
         var pickupTime = new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero);
 
         var booking = await _api.RegisterPickup(
             registrationNumber: "EST_01",
             customerSsn: "12345678901",
-            category: CarCategory.Combi,
+            categoryCode: "COMBI",
             pickupStationCode: "OSL",
             pickupDateTime: pickupTime,
             pickupMeterReadingKm: 10000,

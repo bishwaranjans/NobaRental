@@ -39,7 +39,7 @@ public interface ICarApiClient
     [AllowAnyStatusCode]
     Task<Response<IReadOnlyCollection<CarResponse>>> GetAvailableCars(
         [Query] string? stationCode = null,
-        [Query] CarCategoryDto? category = null,
+        [Query] string? categoryCode = null,
         CancellationToken cancellationToken = default);
 
     [Get("api/v1/cars/{registrationNumber}")]

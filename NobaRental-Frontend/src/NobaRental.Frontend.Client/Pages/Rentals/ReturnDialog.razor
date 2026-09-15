@@ -5,7 +5,7 @@
                 <MudCardContent>
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Booking Details</MudText>
                     <MudText Typo="Typo.body2"><strong>Booking:</strong> #@Booking.BookingNumber</MudText>
-                    <MudText Typo="Typo.body2"><strong>Car:</strong> @Booking.RegistrationNumber (@Booking.Category)</MudText>
+                    <MudText Typo="Typo.body2"><strong>Car:</strong> @Booking.RegistrationNumber (@(Booking.CategoryName ?? Booking.CategoryCode))</MudText>
                     <MudText Typo="Typo.body2"><strong>Pickup Station:</strong> @Booking.PickupStationCode</MudText>
                     <MudText Typo="Typo.body2"><strong>Pickup Time:</strong> @Booking.PickupDateTime.ToString("yyyy-MM-dd HH:mm")</MudText>
                     <MudText Typo="Typo.body2"><strong>Pickup Meter:</strong> @Booking.PickupMeterReadingKm km</MudText>
@@ -91,3 +91,4 @@
         </MudButton>
     </DialogActions>
 </MudDialog>
+

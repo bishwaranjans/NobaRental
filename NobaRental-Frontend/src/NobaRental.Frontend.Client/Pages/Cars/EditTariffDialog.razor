@@ -23,7 +23,7 @@
                                   Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField Value="@Car.Category.ToString()"
+                    <MudTextField Value="@(Car.CategoryName ?? Car.CategoryCode)"
                                   Label="Vehicle Category"
                                   ReadOnly="true"
                                   Variant="Variant.Outlined" />
@@ -67,3 +67,4 @@
         </MudButton>
     </DialogActions>
 </MudDialog>
+

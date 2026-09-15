@@ -8,13 +8,14 @@ internal static class CarMap
     public static CarResponse MapToResponse(this Car domain) =>
         new(
             RegistrationNumber: domain.RegistrationNumber,
-            Category: domain.Category.MapToResponse(),
+            CategoryCode: domain.CategoryCode,
             CurrentMeterReadingKm: domain.CurrentMeterReadingKm,
             Status: domain.Status.MapToResponse(),
             CurrentStationCode: domain.CurrentStationCode,
             BaseDayRental: domain.BaseDayRental,
             BaseKmPrice: domain.BaseKmPrice,
-            RowVersion: domain.RowVersion);
+            RowVersion: domain.RowVersion,
+            CategoryName: domain.CategoryName);
 
     public static IReadOnlyCollection<CarResponse> MapToResponse(this IReadOnlyCollection<Car> items) =>
         items.Select(x => x.MapToResponse()).ToList();

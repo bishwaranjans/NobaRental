@@ -3,7 +3,7 @@ using MudBlazor;
 using NobaRental.Backend.WebApi.Client;
 using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Models.Response;
-using NobaRental.Backend.WebApi.Client.Models.Values;
+
 using NobaRental.Frontend.Client.Helpers;
 
 namespace NobaRental.Frontend.Client.Pages.Cars;
@@ -25,7 +25,7 @@ public partial class EditTariffDialog(
     protected decimal BaseDayRental { get; set; }
     protected decimal BaseKmPrice { get; set; }
 
-    protected bool IsSmallCar => Car.Category == CarCategoryDto.SmallCar;
+    protected static bool IsSmallCar => false;
 
     protected override void OnInitialized()
     {
@@ -87,3 +87,5 @@ public partial class EditTariffDialog(
         }
     }
 }
+
+

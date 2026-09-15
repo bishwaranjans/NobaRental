@@ -2,7 +2,7 @@
 
 A modern car rental management system built with **.NET 10**, **.NET Aspire**, **Microsoft SQL Server**, **Entity Framework Core**, and **MudBlazor**.
 
-Designed and structured according to **Clean Architecture** and some **Domain-Driven Design (DDD)** principles, prioritizing testability, domain isolation, separation of concerns, and the Open/Closed Principle.
+Designed and structured according to **Clean Architecture** prioritizing testability, domain isolation, separation of concerns, and the Open/Closed Principle.
 
 ---
 
@@ -11,22 +11,19 @@ Designed and structured according to **Clean Architecture** and some **Domain-Dr
 The system manages physical fleet assets, multi-station logistics, and end-to-end vehicle rental lifecycles across Norway:
 
 ### 1.1 Vehicle Categories & Extensibility
-Cars for rent are categorized into three initial groups:
-- **Small car**
-- **Combi**
-- **Truck**
+Vehicle categories are database entities rather than a fixed enum. The initial migration seeds:
+- `SMALL` — Small car
+- `COMBI` — Combi
+- `TRUCK` — Truck
 
+Categories can be created, edited, activated/deactivated, and removed from the **Categories** page in the frontend. A category must be active before it can be assigned to a vehicle or rental pickup.
 
-### 1.2 Rental Rates & Pricing Formulas (in NOK)
+### 1.2 Rental Rates & Pricing (in NOK)
 All rates and calculated totals are explicitly denoted in **Norwegian Krone (NOK)** with two decimal places (`decimal(18, 2)`):
 - `baseDayRental`: Base daily rental cost (NOK/day)
 - `baseKmPrice`: Base kilometer price (NOK/km)
 
-| Category | Pricing Formula (NOK) | Notes |
-|---|---|---|
-| **Small car** | `Price = baseDayRental * numberOfDays` | 
-| **Combi** | `Price = (baseDayRental * numberOfDays * 1.3) + (baseKmPrice * numberOfKm)` | 
-| **Truck** | `Price = (baseDayRental * numberOfDays * 1.5) + (baseKmPrice * numberOfKm * 1.5)` | 
+Pricing multipliers and whether kilometers are charged are configured per category. The values are snapshotted on a booking at pickup so later category changes do not alter historical invoices.
 
 ### 1.3 Fleet & Station Logistics
 - **Permanent Vehicle Assets**: Vehicles are registered physical assets with immutable categories and strictly monotonically increasing odometers.
@@ -102,19 +99,18 @@ CarRental/
 │       │   ├── IRentalBookingApi.cs               # Rental booking business contract
 │       │   ├── IStationApi.cs                     # Station management business contract
 │       │   ├── Models/                            # Sealed records: Car, Station, RentalBooking, PagedResult<T>
-│       │   ├── Values/                            # Enums: CarCategory, CarStatus, RentalStatus
+│       │   ├── Values/                            # Status enums only: CarStatus, RentalStatus
 │       │   └── Exceptions/                        # RentalConcurrencyException, StationInUseException, etc.
 │       ├── NobaRental.Backend.Business/           # Core business logic & pricing calculations
 │       │   ├── Api/CarFleetApi.cs                 # Car fleet service implementation
 │       │   ├── Api/RentalBookingApi.cs            # Rental booking service implementation
 │       │   ├── Api/StationApi.cs                  # Station management service implementation
-│       │   ├── Pricing/RentalPriceCalculator.cs   # Strategy-driven pricing engine adhering to OCP
-│       │   ├── Pricing/Strategies/                # SmallCar, Combi, Truck pricing strategy implementations
+│       │   ├── Pricing/RentalPriceCalculator.cs   # Category-multiplier pricing engine
 │       │   ├── Pricing/RentalDurationCalculator.cs# Billed days & km delta calculation
 │       │   └── Mapping/                           # Entity <-> Domain mappers (CarMap, StationMap, RentalBookingMap)
 │       ├── NobaRental.Backend.Business.Test/      # Unit tests for domain APIs, pricing & fleet rules (76 tests)
 │       ├── NobaRental.Backend.Data/               # EF Core persistence
-│       │   ├── Entities/                          # CarEntity, StationEntity, RentalBookingEntity
+│       │   ├── Entities/                          # CarCategoryEntity, CarEntity, StationEntity, RentalBookingEntity
 │       │   ├── Entities/Common/                   # IAuditableEntity, ISoftDeletable, AuditableEntity, SoftDeletableEntity
 │       │   ├── Configurations/                    # Fluent entity configurations, query filters & indexes
 │       │   ├── Migrations/                        # Generated EF Core migrations with seed data
@@ -146,6 +142,7 @@ CarRental/
 │       └── NobaRental.Frontend.Client/            # Interactive Blazor UI with MudBlazor components
 │           ├── Pages/Cars/                        # CarsPage (table, server reload, decommission), AddCarDialog
 │           ├── Pages/Stations/                    # StationsPage (table, CRUD), StationDialog
+│           ├── Pages/Categories/                  # CategoriesPage (table, CRUD), CategoryDialog
 │           └── Pages/Rentals/                     # RentalsPage (server reload, routes), PickupDialog, ReturnDialog
 └── NobaRental-Shared/
     └── NobaRental.Shared.ServiceDefaults/        # Observability, OpenTelemetry, health checks
@@ -171,7 +168,7 @@ The connection string in `NobaRental-Backend/src/NobaRental.Backend.WebApi/appse
 }
 ```
 
-To apply the migration and automatically seed the initial 5 stations (`OSL`, `BGO`, `TRD`, `SVG`, `OSLO-C`) and 3 fleet vehicles (`EV12345`, `BT20001`, `TR99001`):
+The database is recreated from one baseline migration. Applying it creates the schema and seeds the initial stations, fleet vehicles, and categories:
 
 ```powershell
 dotnet ef database update --project NobaRental-Backend/src/NobaRental.Backend.Data/NobaRental.Backend.Data.csproj --startup-project NobaRental-Backend/src/NobaRental.Backend.Data.MigrationStartup/NobaRental.Backend.Data.MigrationStartup.csproj
@@ -195,6 +192,7 @@ The Aspire dashboard will start and display live status, logs, and endpoints:
   - **Fleet (`/cars`)**: Vehicle inventory, status filtering, odometer tracking, and decommission action.
   - **Bookings (`/rentals`)**: Active rentals, one-way route chips (`OSL ➔ BGO`), pickup and return modals.
   - **Stations (`/stations`)**: Hub management, station creation, editing, and deletion.
+  - **Categories (`/categories`)**: Dynamic category management, pricing multipliers, kilometer charging, and active status.
 - **Backend Swagger UI**: `https://localhost:7000/swagger`
 
 ---
@@ -221,6 +219,14 @@ All endpoints are versioned and return RFC 7807 Problem Details on validation or
 | `POST` | `/api/v1/stations` | Create a new rental station |
 | `PUT` | `/api/v1/stations/{code}` | Update station details, name, or active status |
 | `DELETE` | `/api/v1/stations/{code}` | Soft-delete station (protected against active fleet assignment) |
+
+### Category Endpoints
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/categories` | List categories, optionally including inactive categories |
+| `POST` | `/api/v1/categories` | Create a category |
+| `PUT` | `/api/v1/categories/{code}` | Update category pricing and active status |
+| `DELETE` | `/api/v1/categories/{code}` | Soft-delete a category when it is not in use |
 
 ### Car Fleet Endpoints
 | Method | Endpoint | Description |

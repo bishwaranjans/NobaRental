@@ -16,8 +16,8 @@ public class CarEntityConfiguration : IEntityTypeConfiguration<CarEntity>
             .HasMaxLength(20)
             .IsRequired();
 
-        b.Property(x => x.Category)
-            .HasConversion<int>()
+        b.Property(x => x.CategoryCode)
+            .HasMaxLength(20)
             .IsRequired();
 
         b.Property(x => x.Status)
@@ -43,6 +43,12 @@ public class CarEntityConfiguration : IEntityTypeConfiguration<CarEntity>
             .IsRequired();
 
         b.HasQueryFilter(x => !x.IsDeleted);
+
+        b.HasOne(x => x.Category)
+            .WithMany(x => x.Cars)
+            .HasForeignKey(x => x.CategoryCode)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         b.HasOne(x => x.CurrentStation)
             .WithMany(x => x.Cars)

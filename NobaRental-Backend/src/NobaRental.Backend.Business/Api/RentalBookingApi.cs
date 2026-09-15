@@ -19,16 +19,23 @@ public class RentalBookingApi(
     public async Task<RentalBooking> RegisterPickup(
         string registrationNumber,
         string customerSsn,
-        CarCategory category,
+        string categoryCode,
         string pickupStationCode,
         DateTimeOffset pickupDateTime,
         long pickupMeterReadingKm,
         CancellationToken cancellationToken = default)
     {
-        ValidatePickupArguments(registrationNumber, customerSsn, pickupStationCode, pickupMeterReadingKm);
+        ValidatePickupArguments(registrationNumber, customerSsn, categoryCode, pickupStationCode, pickupMeterReadingKm);
 
         var normalizedReg = registrationNumber.Trim().ToUpperInvariant();
+        var normalizedCat = categoryCode.Trim().ToUpperInvariant();
         var normalizedStation = pickupStationCode.Trim().ToUpperInvariant();
+
+        var category = await ctx.CarCategories.SingleOrDefaultAsync(c => c.Code == normalizedCat, cancellationToken);
+        if (category?.IsActive != true)
+        {
+            throw new InvalidRentalOperationException($"Category '{normalizedCat}' does not exist or is inactive.");
+        }
 
         var station = await ctx.Stations.SingleOrDefaultAsync(s => s.Code == normalizedStation, cancellationToken);
         if (station?.IsActive != true)
@@ -36,22 +43,24 @@ public class RentalBookingApi(
             throw new InvalidRentalOperationException($"Pickup station '{normalizedStation}' does not exist or is inactive.");
         }
 
-        var car = await ctx.Cars.FirstOrDefaultAsync(x => x.RegistrationNumber == normalizedReg, cancellationToken);
-        ValidateCarForPickup(car, normalizedReg, category, normalizedStation, pickupMeterReadingKm);
+        var car = await ctx.Cars.SingleOrDefaultAsync(x => x.RegistrationNumber == normalizedReg, cancellationToken);
+        ValidateCarForPickup(car, normalizedReg, normalizedCat, normalizedStation, pickupMeterReadingKm);
 
         car!.Status = CarStatusValue.Rented;
 
         var entity = RentalBookingMap.MapToEntity(
             registrationNumber: normalizedReg,
             customerSsn: customerSsn.Trim(),
-            category: category,
+            categoryCode: normalizedCat,
+            appliedDayMultiplier: category.DayMultiplier,
+            appliedKmMultiplier: category.KmMultiplier,
             pickupStationCode: normalizedStation,
             pickupDateTime: pickupDateTime,
             pickupMeterReadingKm: pickupMeterReadingKm,
             baseDayRental: car.BaseDayRental,
             baseKmPrice: car.BaseKmPrice);
 
-        await ctx.RentalBookings.AddAsync(entity, cancellationToken);
+        ctx.RentalBookings.Add(entity);
 
         try
         {
@@ -127,6 +136,7 @@ public class RentalBookingApi(
 
         var entity = await ctx.RentalBookings
             .AsNoTracking()
+            .Include(b => b.Category)
             .SingleOrDefaultAsync(x => x.BookingNumber == bookingNumber, cancellationToken);
 
         return entity?.Map();
@@ -136,6 +146,7 @@ public class RentalBookingApi(
     {
         var entities = await ctx.RentalBookings
             .AsNoTracking()
+            .Include(b => b.Category)
             .OrderByDescending(x => x.PickupDateTime)
             .ToListAsync(cancellationToken);
 
@@ -152,7 +163,10 @@ public class RentalBookingApi(
         bool sortDescending = false,
         CancellationToken cancellationToken = default)
     {
-        var query = ctx.RentalBookings.AsNoTracking();
+        var query = ctx.RentalBookings
+            .AsNoTracking()
+            .Include(b => b.Category)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -191,6 +205,7 @@ public class RentalBookingApi(
     {
         var entities = await ctx.RentalBookings
             .AsNoTracking()
+            .Include(b => b.Category)
             .Where(x => x.Status == RentalStatusValue.Active)
             .OrderByDescending(x => x.PickupDateTime)
             .ToListAsync(cancellationToken);
@@ -213,7 +228,8 @@ public class RentalBookingApi(
         var drivenKm = RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, returnMeterReadingKm);
 
         var price = priceCalculator.CalculatePrice(
-            category: entity.Category.ToDomain(),
+            dayMultiplier: entity.AppliedDayMultiplier,
+            kmMultiplier: entity.AppliedKmMultiplier,
             baseDayRental: entity.BaseDayRental,
             baseKmPrice: entity.BaseKmPrice,
             numberOfDays: billedDays,
@@ -227,15 +243,16 @@ public class RentalBookingApi(
             Currency: entity.Currency);
     }
 
-    private static void ValidatePickupArguments(string reg, string ssn, string station, long meter)
+    private static void ValidatePickupArguments(string reg, string ssn, string categoryCode, string station, long meter)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reg);
         ArgumentException.ThrowIfNullOrWhiteSpace(ssn);
+        ArgumentException.ThrowIfNullOrWhiteSpace(categoryCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(station);
         ArgumentOutOfRangeException.ThrowIfNegative(meter);
     }
 
-    private static void ValidateCarForPickup(CarEntity? car, string reg, CarCategory category, string station, long meter)
+    private static void ValidateCarForPickup(CarEntity? car, string reg, string categoryCode, string station, long meter)
     {
         if (car is null)
             throw new InvalidRentalOperationException($"Car '{reg}' is not registered in the fleet.");
@@ -243,8 +260,8 @@ public class RentalBookingApi(
         if (car.Status != CarStatusValue.Available)
             throw new InvalidRentalOperationException($"Car '{reg}' is not available for rental (current status: {car.Status}).");
 
-        if (car.Category != category.ToEntity())
-            throw new InvalidRentalOperationException($"Car '{reg}' category '{car.Category}' does not match requested category '{category}'.");
+        if (!string.Equals(car.CategoryCode, categoryCode, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidRentalOperationException($"Car '{reg}' category '{car.CategoryCode}' does not match requested category '{categoryCode}'.");
 
         if (!string.Equals(car.CurrentStationCode, station, StringComparison.OrdinalIgnoreCase))
             throw new InvalidRentalOperationException($"Car '{reg}' is stationed at '{car.CurrentStationCode}', not at pickup station '{station}'.");
@@ -259,7 +276,8 @@ public class RentalBookingApi(
         var drivenKm = RentalDurationCalculator.CalculateKilometers(entity.PickupMeterReadingKm, returnMeter);
 
         var totalPrice = priceCalculator.CalculatePrice(
-            category: entity.Category.ToDomain(),
+            dayMultiplier: entity.AppliedDayMultiplier,
+            kmMultiplier: entity.AppliedKmMultiplier,
             baseDayRental: entity.BaseDayRental,
             baseKmPrice: entity.BaseKmPrice,
             numberOfDays: billedDays,

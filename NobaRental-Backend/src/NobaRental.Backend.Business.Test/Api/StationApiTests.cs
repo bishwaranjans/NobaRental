@@ -109,7 +109,7 @@ public sealed class StationApiTests : IDisposable
         _ctx.Cars.Add(new CarEntity
         {
             RegistrationNumber = "BO12345",
-            Category = CarCategoryValue.SmallCar,
+            CategoryCode = "SMALL",
             CurrentMeterReadingKm = 1000,
             Status = CarStatusValue.Available,
             CurrentStationCode = "BOO"
@@ -132,7 +132,7 @@ public sealed class StationApiTests : IDisposable
             BookingNumber = 9999,
             RegistrationNumber = "EV99999",
             CustomerSsn = "12345678901",
-            Category = CarCategoryValue.SmallCar,
+            CategoryCode = "SMALL",
             PickupStationCode = "EVE",
             PickupDateTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero),
             PickupMeterReadingKm = 500,

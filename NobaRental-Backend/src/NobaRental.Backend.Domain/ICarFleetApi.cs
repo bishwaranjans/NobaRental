@@ -7,7 +7,7 @@ public interface ICarFleetApi
 {
     Task<Car> RegisterCar(
         string registrationNumber,
-        CarCategory category,
+        string categoryCode,
         long initialMeterReadingKm,
         string stationCode,
         decimal baseDayRental,
@@ -37,7 +37,7 @@ public interface ICarFleetApi
 
     Task<IReadOnlyCollection<Car>> GetAvailableCars(
         string? stationCode = null,
-        CarCategory? category = null,
+        string? categoryCode = null,
         CancellationToken cancellationToken = default);
 
     Task<Car?> GetCarByRegistrationNumber(string registrationNumber, CancellationToken cancellationToken = default);

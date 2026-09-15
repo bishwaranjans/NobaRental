@@ -9,18 +9,19 @@ internal static class CarMap
     public static Car Map(this CarEntity entity) =>
         new(
             RegistrationNumber: entity.RegistrationNumber,
-            Category: entity.Category.ToDomain(),
+            CategoryCode: entity.CategoryCode,
             CurrentMeterReadingKm: entity.CurrentMeterReadingKm,
             Status: entity.Status.ToDomain(),
             CurrentStationCode: entity.CurrentStationCode,
             BaseDayRental: entity.BaseDayRental,
             BaseKmPrice: entity.BaseKmPrice,
             IsDeleted: entity.IsDeleted,
-            RowVersion: entity.RowVersion);
+            RowVersion: entity.RowVersion,
+            CategoryName: entity.Category?.Name);
 
     public static CarEntity MapToEntity(
         string registrationNumber,
-        CarCategory category,
+        string categoryCode,
         long initialMeterReadingKm,
         string stationCode,
         decimal baseDayRental,
@@ -29,7 +30,7 @@ internal static class CarMap
         new()
         {
             RegistrationNumber = registrationNumber.Trim().ToUpperInvariant(),
-            Category = category.ToEntity(),
+            CategoryCode = categoryCode.Trim().ToUpperInvariant(),
             CurrentMeterReadingKm = initialMeterReadingKm,
             Status = status.ToEntity(),
             CurrentStationCode = stationCode.Trim().ToUpperInvariant(),

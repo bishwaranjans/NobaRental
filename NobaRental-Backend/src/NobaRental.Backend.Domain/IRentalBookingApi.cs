@@ -8,7 +8,7 @@ public interface IRentalBookingApi
     Task<RentalBooking> RegisterPickup(
         string registrationNumber,
         string customerSsn,
-        CarCategory category,
+        string categoryCode,
         string pickupStationCode,
         DateTimeOffset pickupDateTime,
         long pickupMeterReadingKm,

@@ -32,6 +32,7 @@ services.AddDbContextPool<NobaRentalDbContext>((sp, options) => options
 services.AddScoped<IRentalBookingApi, RentalBookingApi>();
 services.AddScoped<ICarFleetApi, CarFleetApi>();
 services.AddScoped<IStationApi, StationApi>();
+services.AddScoped<ICarCategoryApi, CarCategoryApi>();
 services.ConfigureValidation();
 services.ConfigurePricing();
 

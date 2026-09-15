@@ -151,19 +151,13 @@ public partial class RentalsPage(
         await dialogService.ShowAsync<ReturnReceiptDialog>("Rental Return Receipt", parameters, options);
     }
 
-    protected static Color GetCategoryColor(CarCategoryDto category) => category switch
+    protected static Color GetCategoryColor(string categoryCode) => categoryCode.ToUpperInvariant() switch
     {
-        CarCategoryDto.SmallCar => Color.Primary,
-        CarCategoryDto.Combi => Color.Secondary,
-        CarCategoryDto.Truck => Color.Tertiary,
+        "SMALL" => Color.Primary,
+        "COMBI" => Color.Secondary,
+        "TRUCK" => Color.Tertiary,
         _ => Color.Default
     };
-
-    protected static string GetCategoryName(CarCategoryDto category) => category switch
-    {
-        CarCategoryDto.SmallCar => "Small car",
-        CarCategoryDto.Combi => "Combi",
-        CarCategoryDto.Truck => "Truck",
-        _ => category.ToString()
-    };
 }
+
+

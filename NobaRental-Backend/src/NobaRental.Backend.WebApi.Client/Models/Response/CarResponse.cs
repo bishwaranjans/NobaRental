@@ -4,10 +4,11 @@ namespace NobaRental.Backend.WebApi.Client.Models.Response;
 
 public sealed record CarResponse(
     string RegistrationNumber,
-    CarCategoryDto Category,
+    string CategoryCode,
     long CurrentMeterReadingKm,
     CarStatusDto Status,
     string CurrentStationCode,
     decimal BaseDayRental,
     decimal BaseKmPrice,
-    byte[]? RowVersion = null);
+    byte[]? RowVersion = null,
+    string? CategoryName = null);

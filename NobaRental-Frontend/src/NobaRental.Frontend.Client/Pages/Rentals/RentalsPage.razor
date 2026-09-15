@@ -97,8 +97,8 @@
                 </MudTd>
                 <MudTd DataLabel="Car Reg">@context.RegistrationNumber</MudTd>
                 <MudTd DataLabel="Category">
-                    <MudChip T="string" Size="Size.Small" Color="@GetCategoryColor(context.Category)">
-                        @GetCategoryName(context.Category)
+                    <MudChip T="string" Size="Size.Small" Color="@GetCategoryColor(context.CategoryCode)">
+                        @(context.CategoryName ?? context.CategoryCode)
                     </MudChip>
                 </MudTd>
                 <MudTd DataLabel="Route">
@@ -201,3 +201,5 @@
         </MudTable>
     </MudStack>
 </div>
+
+

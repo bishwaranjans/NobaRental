@@ -8,7 +8,6 @@ using NobaRental.Backend.Data;
 
 #nullable disable
 
-#pragma warning disable IDE0161 // Convert to file-scoped namespace
 namespace NobaRental.Backend.Data.Migrations
 {
     [DbContext(typeof(NobaRentalDbContext))]
@@ -22,6 +21,94 @@ namespace NobaRental.Backend.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("NobaRental.Backend.Data.Entities.CarCategoryEntity", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<bool>("ChargesKilometers")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("DayMultiplier")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("KmMultiplier")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTimeOffset?>("ModifiedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("CarCategory", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Code = "SMALL",
+                            ChargesKilometers = false,
+                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DayMultiplier = 1.0m,
+                            IsActive = true,
+                            IsDeleted = false,
+                            KmMultiplier = 0.0m,
+                            Name = "Small car",
+                            RowVersion = new byte[0]
+                        },
+                        new
+                        {
+                            Code = "COMBI",
+                            ChargesKilometers = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DayMultiplier = 1.3m,
+                            IsActive = true,
+                            IsDeleted = false,
+                            KmMultiplier = 1.0m,
+                            Name = "Combi",
+                            RowVersion = new byte[0]
+                        },
+                        new
+                        {
+                            Code = "TRUCK",
+                            ChargesKilometers = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DayMultiplier = 1.5m,
+                            IsActive = true,
+                            IsDeleted = false,
+                            KmMultiplier = 1.5m,
+                            Name = "Truck",
+                            RowVersion = new byte[0]
+                        });
+                });
 
             modelBuilder.Entity("NobaRental.Backend.Data.Entities.CarEntity", b =>
                 {
@@ -38,8 +125,11 @@ namespace NobaRental.Backend.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Category")
-                        .HasColumnType("int");
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -73,50 +163,11 @@ namespace NobaRental.Backend.Data.Migrations
 
                     b.HasKey("RegistrationNumber");
 
+                    b.HasIndex("CategoryCode");
+
                     b.HasIndex("CurrentStationCode");
 
                     b.ToTable("Car", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            RegistrationNumber = "EV12345",
-                            BaseDayRental = 500m,
-                            BaseKmPrice = 0m,
-                            Category = 1,
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CurrentMeterReadingKm = 1000L,
-                            CurrentStationCode = "OSL",
-                            IsDeleted = false,
-                            RowVersion = new byte[0],
-                            Status = 1
-                        },
-                        new
-                        {
-                            RegistrationNumber = "BT20001",
-                            BaseDayRental = 700m,
-                            BaseKmPrice = 2.5m,
-                            Category = 2,
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CurrentMeterReadingKm = 5000L,
-                            CurrentStationCode = "OSL",
-                            IsDeleted = false,
-                            RowVersion = new byte[0],
-                            Status = 1
-                        },
-                        new
-                        {
-                            RegistrationNumber = "TR99001",
-                            BaseDayRental = 1200m,
-                            BaseKmPrice = 4m,
-                            Category = 3,
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            CurrentMeterReadingKm = 15000L,
-                            CurrentStationCode = "BGO",
-                            IsDeleted = false,
-                            RowVersion = new byte[0],
-                            Status = 1
-                        });
                 });
 
             modelBuilder.Entity("NobaRental.Backend.Data.Entities.RentalBookingEntity", b =>
@@ -127,6 +178,14 @@ namespace NobaRental.Backend.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("BookingNumber"));
 
+                    b.Property<decimal>("AppliedDayMultiplier")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("AppliedKmMultiplier")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<decimal>("BaseDayRental")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -135,8 +194,11 @@ namespace NobaRental.Backend.Data.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("Category")
-                        .HasColumnType("int");
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -200,6 +262,8 @@ namespace NobaRental.Backend.Data.Migrations
 
                     b.HasKey("BookingNumber");
 
+                    b.HasIndex("CategoryCode");
+
                     b.HasIndex("PickupStationCode");
 
                     b.HasIndex("RegistrationNumber")
@@ -254,72 +318,32 @@ namespace NobaRental.Backend.Data.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("Station", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Code = "OSL",
-                            City = "Oslo",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsActive = true,
-                            IsDeleted = false,
-                            Name = "Oslo Airport Gardermoen",
-                            RowVersion = new byte[0]
-                        },
-                        new
-                        {
-                            Code = "BGO",
-                            City = "Bergen",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsActive = true,
-                            IsDeleted = false,
-                            Name = "Bergen Airport Flesland",
-                            RowVersion = new byte[0]
-                        },
-                        new
-                        {
-                            Code = "TRD",
-                            City = "Trondheim",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsActive = true,
-                            IsDeleted = false,
-                            Name = "Trondheim Airport Værnes",
-                            RowVersion = new byte[0]
-                        },
-                        new
-                        {
-                            Code = "SVG",
-                            City = "Stavanger",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsActive = true,
-                            IsDeleted = false,
-                            Name = "Stavanger Airport Sola",
-                            RowVersion = new byte[0]
-                        },
-                        new
-                        {
-                            Code = "OSLO-C",
-                            City = "Oslo",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsActive = true,
-                            IsDeleted = false,
-                            Name = "Oslo Central Station",
-                            RowVersion = new byte[0]
-                        });
                 });
 
             modelBuilder.Entity("NobaRental.Backend.Data.Entities.CarEntity", b =>
                 {
+                    b.HasOne("NobaRental.Backend.Data.Entities.CarCategoryEntity", "Category")
+                        .WithMany("Cars")
+                        .HasForeignKey("CategoryCode")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("NobaRental.Backend.Data.Entities.StationEntity", "CurrentStation")
                         .WithMany("Cars")
                         .HasForeignKey("CurrentStationCode")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
 
                     b.Navigation("CurrentStation");
                 });
 
             modelBuilder.Entity("NobaRental.Backend.Data.Entities.RentalBookingEntity", b =>
                 {
+                    b.HasOne("NobaRental.Backend.Data.Entities.CarCategoryEntity", "Category")
+                        .WithMany("Bookings")
+                        .HasForeignKey("CategoryCode")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("NobaRental.Backend.Data.Entities.StationEntity", "PickupStation")
                         .WithMany("PickupBookings")
                         .HasForeignKey("PickupStationCode")
@@ -337,9 +361,18 @@ namespace NobaRental.Backend.Data.Migrations
 
                     b.Navigation("Car");
 
+                    b.Navigation("Category");
+
                     b.Navigation("PickupStation");
 
                     b.Navigation("ReturnStation");
+                });
+
+            modelBuilder.Entity("NobaRental.Backend.Data.Entities.CarCategoryEntity", b =>
+                {
+                    b.Navigation("Bookings");
+
+                    b.Navigation("Cars");
                 });
 
             modelBuilder.Entity("NobaRental.Backend.Data.Entities.CarEntity", b =>

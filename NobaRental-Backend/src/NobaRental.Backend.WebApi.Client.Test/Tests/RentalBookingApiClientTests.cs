@@ -7,7 +7,6 @@ using NobaRental.Backend.WebApi.Client.Test.Helpers;
 using NSubstitute;
 using RestEase;
 using System.Net;
-using DtoCarCategory = NobaRental.Backend.WebApi.Client.Models.Values.CarCategoryDto;
 using DtoRentalStatus = NobaRental.Backend.WebApi.Client.Models.Values.RentalStatusDto;
 
 namespace NobaRental.Backend.WebApi.Client.Test.Tests;
@@ -20,7 +19,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         long bookingNumber,
         string regNumber,
         string ssn,
-        CarCategory category,
+        string categoryCode,
         string pickupStation,
         DateTimeOffset pickupTime,
         long pickupKm,
@@ -30,7 +29,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             BookingNumber: bookingNumber,
             RegistrationNumber: regNumber,
             CustomerSsn: ssn,
-            Category: category,
+            CategoryCode: categoryCode,
             PickupStationCode: pickupStation,
             PickupDateTime: pickupTime,
             PickupMeterReadingKm: pickupKm,
@@ -51,9 +50,9 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         // Arrange
         var api = Substitute.For<IRentalBookingApi>();
         var pickupTime = new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero);
-        var domainBooking = CreateDomainBooking(101L, "EV12345", "12345678901", CarCategory.SmallCar, "OSL", pickupTime, 10000);
+        var domainBooking = CreateDomainBooking(101L, "EV12345", "12345678901", "SMALL", "OSL", pickupTime, 10000);
 
-        api.RegisterPickup("EV12345", "12345678901", CarCategory.SmallCar, "OSL", Arg.Any<DateTimeOffset>(), 10000, Arg.Any<CancellationToken>())
+        api.RegisterPickup("EV12345", "12345678901", "SMALL", "OSL", Arg.Any<DateTimeOffset>(), 10000, Arg.Any<CancellationToken>())
            .Returns(domainBooking);
 
         ReplaceService(api);
@@ -61,7 +60,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         var request = new RegisterPickupRequest(
             RegistrationNumber: "EV12345",
             CustomerSsn: "12345678901",
-            Category: DtoCarCategory.SmallCar,
+            CategoryCode: "SMALL",
             PickupStationCode: "OSL",
             PickupDateTime: pickupTime,
             PickupMeterReadingKm: 10000);
@@ -76,7 +75,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         Assert.Equal(101L, content.BookingNumber);
         Assert.Equal("EV12345", content.RegistrationNumber);
         Assert.Equal("****** 78901", content.CustomerSsn);
-        Assert.Equal(DtoCarCategory.SmallCar, content.Category);
+        Assert.Equal("SMALL", content.CategoryCode);
         Assert.Equal(DtoRentalStatus.Active, content.Status);
         Assert.Equal("OSL", content.PickupStationCode);
         Assert.Equal("NOK", content.Currency);
@@ -95,7 +94,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             BookingNumber: 101L,
             RegistrationNumber: "EV12345",
             CustomerSsn: "12345678901",
-            Category: CarCategory.SmallCar,
+            CategoryCode: "SMALL",
             PickupStationCode: "OSL",
             PickupDateTime: pickupTime,
             PickupMeterReadingKm: 10000,
@@ -196,7 +195,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         var request = new RegisterPickupRequest(
             RegistrationNumber: "EV12345",
             CustomerSsn: ssn,
-            Category: DtoCarCategory.SmallCar,
+            CategoryCode: "SMALL",
             PickupStationCode: "OSL",
             PickupDateTime: new DateTimeOffset(2026, 9, 12, 10, 0, 0, TimeSpan.Zero),
             PickupMeterReadingKm: 10000);
@@ -216,7 +215,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             BookingNumber: 202L,
             RegistrationNumber: "BT99999",
             CustomerSsn: "98765432100",
-            Category: CarCategory.Combi,
+            CategoryCode: "COMBI",
             PickupStationCode: "OSL",
             PickupDateTime: new DateTimeOffset(2026, 9, 10, 8, 0, 0, TimeSpan.Zero),
             PickupMeterReadingKm: 50000,
@@ -254,7 +253,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             BookingNumber: 202L,
             RegistrationNumber: "BT99999",
             CustomerSsn: "98765432100",
-            Category: CarCategory.Combi,
+            CategoryCode: "COMBI",
             PickupStationCode: "OSL",
             PickupDateTime: new DateTimeOffset(2026, 9, 10, 8, 0, 0, TimeSpan.Zero),
             PickupMeterReadingKm: 50000,
@@ -280,7 +279,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         var content = result.GetContent();
         Assert.NotNull(content);
         Assert.Equal(202L, content.BookingNumber);
-        Assert.Equal(DtoCarCategory.Combi, content.Category);
+        Assert.Equal("COMBI", content.CategoryCode);
         Assert.Equal("OSL", content.PickupStationCode);
     }
 
@@ -293,7 +292,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             BookingNumber: 303L,
             RegistrationNumber: "BT11111",
             CustomerSsn: "11111111111",
-            Category: CarCategory.Truck,
+            CategoryCode: "TRUCK",
             PickupStationCode: "TRD",
             PickupDateTime: new DateTimeOffset(2026, 9, 11, 9, 0, 0, TimeSpan.Zero),
             PickupMeterReadingKm: 80000,
@@ -323,7 +322,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
         Assert.Equal(1, content.TotalCount);
         var item = Assert.Single(content.Items);
         Assert.Equal(303L, item.BookingNumber);
-        Assert.Equal(DtoCarCategory.Truck, item.Category);
+        Assert.Equal("TRUCK", item.CategoryCode);
     }
 
     [Fact]
@@ -335,7 +334,7 @@ public sealed class RentalBookingApiClientTests : TestWebHost
             BookingNumber: 404L,
             RegistrationNumber: "BT22222",
             CustomerSsn: "22222222222",
-            Category: CarCategory.SmallCar,
+            CategoryCode: "SMALL",
             PickupStationCode: "SVG",
             PickupDateTime: new DateTimeOffset(2026, 9, 11, 10, 0, 0, TimeSpan.Zero),
             PickupMeterReadingKm: 20000,

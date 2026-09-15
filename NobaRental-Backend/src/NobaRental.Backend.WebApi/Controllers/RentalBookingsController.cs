@@ -27,7 +27,7 @@ public class RentalBookingsController(IRentalBookingApi rentalBookingApi) : Cont
         var result = await rentalBookingApi.RegisterPickup(
             registrationNumber: request.RegistrationNumber,
             customerSsn: request.CustomerSsn,
-            category: request.Category.MapToDomain(),
+            categoryCode: request.CategoryCode,
             pickupStationCode: request.PickupStationCode,
             pickupDateTime: request.PickupDateTime,
             pickupMeterReadingKm: request.PickupMeterReadingKm,

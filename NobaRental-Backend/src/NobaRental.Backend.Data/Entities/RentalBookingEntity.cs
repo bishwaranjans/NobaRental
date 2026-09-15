@@ -11,7 +11,13 @@ public class RentalBookingEntity : AuditableEntity
 
     public required string CustomerSsn { get; set; }
 
-    public CarCategoryValue Category { get; set; }
+    public required string CategoryCode { get; set; }
+
+    public CarCategoryEntity? Category { get; set; }
+
+    public decimal AppliedDayMultiplier { get; set; } = 1.0m;
+
+    public decimal AppliedKmMultiplier { get; set; } = 0.0m;
 
     public required string PickupStationCode { get; set; }
 

@@ -18,7 +18,7 @@
                         <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.RegistrationNumber</MudText></MudItem>
 
                         <MudItem xs="6"><MudText Typo="Typo.body2">Category:</MudText></MudItem>
-                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.Category</MudText></MudItem>
+                        <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@(Booking.CategoryName ?? Booking.CategoryCode)</MudText></MudItem>
 
                         <MudItem xs="6"><MudText Typo="Typo.body2">Customer SSN:</MudText></MudItem>
                         <MudItem xs="6"><MudText Typo="Typo.body2" Align="Align.Right">@Booking.CustomerSsn</MudText></MudItem>
@@ -56,3 +56,4 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close">Close</MudButton>
     </DialogActions>
 </MudDialog>
+

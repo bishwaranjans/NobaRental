@@ -1,0 +1,86 @@
+@page "/categories"
+
+<MudStack Spacing="4">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h4">Category Management</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Manage the vehicle categories used throughout the fleet.
+            </MudText>
+        </div>
+
+        <MudStack Row="true" Spacing="2">
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadCategories">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateDialog">
+                Add Category
+            </MudButton>
+        </MudStack>
+    </MudStack>
+
+    <MudTable Items="Categories" Loading="IsLoading" Hover="true" Striped="true" Elevation="1">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Vehicle Categories</MudText>
+            <MudSpacer />
+            <MudSwitch T="bool"
+                       Value="IncludeInactive"
+                       ValueChanged="OnIncludeInactiveChanged"
+                       Label="Include Inactive"
+                       Color="Color.Primary" />
+        </ToolBarContent>
+
+        <HeaderContent>
+            <MudTh>Code</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>Day multiplier</MudTh>
+            <MudTh>Km multiplier</MudTh>
+            <MudTh>Km charging</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small" Color="Color.Primary">
+                    @context.Code
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <strong>@context.Name</strong>
+            </MudTd>
+            <MudTd>@context.DayMultiplier.ToString("N2")</MudTd>
+            <MudTd>@context.KmMultiplier.ToString("N2")</MudTd>
+            <MudTd>@(context.ChargesKilometers ? "Yes" : "No")</MudTd>
+            <MudTd>
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Color="@(context.IsActive ? Color.Success : Color.Default)"
+                         Variant="Variant.Outlined">
+                    @(context.IsActive ? "Active" : "Inactive")
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Size="Size.Small"
+                               Color="Color.Primary"
+                               OnClick="@(() => OpenEditDialog(context))" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Size="Size.Small"
+                               Color="Color.Error"
+                               OnClick="@(() => DeleteCategory(context))" />
+            </MudTd>
+        </RowTemplate>
+
+        <NoRecordsContent>
+            <MudText Class="pa-4" Align="Align.Center" Color="Color.Secondary">
+                No categories found.
+            </MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudStack>

@@ -165,21 +165,15 @@ public partial class CarsPage(
         }
     }
 
-    protected static Color GetCategoryColor(CarCategoryDto category) => category switch
+    protected static Color GetCategoryColor(string categoryCode) => categoryCode.ToUpperInvariant() switch
     {
-        CarCategoryDto.SmallCar => Color.Primary,
-        CarCategoryDto.Combi => Color.Secondary,
-        CarCategoryDto.Truck => Color.Tertiary,
+        "SMALL" => Color.Primary,
+        "COMBI" => Color.Secondary,
+        "TRUCK" => Color.Tertiary,
         _ => Color.Default
     };
 
-    protected static string GetCategoryName(CarCategoryDto category) => category switch
-    {
-        CarCategoryDto.SmallCar => "Small car",
-        CarCategoryDto.Combi => "Combi",
-        CarCategoryDto.Truck => "Truck",
-        _ => category.ToString()
-    };
+    protected static bool ChargesKilometers(string categoryCode) => !string.Equals(categoryCode, "SMALL", StringComparison.OrdinalIgnoreCase);
 
     protected static Color GetStatusColor(CarStatusDto status) => status switch
     {
@@ -190,3 +184,5 @@ public partial class CarsPage(
         _ => Color.Default
     };
 }
+
+

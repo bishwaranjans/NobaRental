@@ -6,7 +6,7 @@ public sealed record RentalBooking(
     long BookingNumber,
     string RegistrationNumber,
     string CustomerSsn,
-    CarCategory Category,
+    string CategoryCode,
     string PickupStationCode,
     DateTimeOffset PickupDateTime,
     long PickupMeterReadingKm,
@@ -20,4 +20,7 @@ public sealed record RentalBooking(
     decimal? TotalPrice,
     string Currency,
     RentalStatus Status,
-    byte[]? RowVersion = null);
+    byte[]? RowVersion = null,
+    decimal AppliedDayMultiplier = 1.0m,
+    decimal AppliedKmMultiplier = 0.0m,
+    string? CategoryName = null);

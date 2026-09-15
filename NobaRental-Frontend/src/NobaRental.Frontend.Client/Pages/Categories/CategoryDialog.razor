@@ -1,0 +1,43 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="Form" @bind-IsValid="IsValid">
+            <MudTextField @bind-Value="Model.Code"
+                          Label="Code"
+                          Required="true"
+                          Disabled="IsEditMode"
+                          Variant="Variant.Outlined" />
+            <MudTextField @bind-Value="Model.Name"
+                          Label="Name"
+                          Required="true"
+                          Variant="Variant.Outlined" />
+            <MudNumericField @bind-Value="Model.DayMultiplier"
+                             Label="Day multiplier"
+                             Min="0.01m"
+                             Required="true"
+                             Variant="Variant.Outlined" />
+            <MudNumericField @bind-Value="Model.KmMultiplier"
+                             Label="Kilometer multiplier"
+                             Min="0m"
+                             Required="true"
+                             Variant="Variant.Outlined" />
+            <MudCheckBox @bind-Value="Model.ChargesKilometers"
+                         Label="Charges kilometers"
+                         Color="Color.Primary" />
+            @if (IsEditMode)
+            {
+                <MudCheckBox @bind-Value="Model.IsActive"
+                             Label="Active"
+                             Color="Color.Primary" />
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || IsSubmitting)"
+                   OnClick="Submit">
+            Save
+        </MudButton>
+    </DialogActions>
+</MudDialog>

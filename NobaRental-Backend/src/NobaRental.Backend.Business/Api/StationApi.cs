@@ -39,7 +39,7 @@ public class StationApi(NobaRentalDbContext dbContext) : IStationApi
         }
 
         var entity = StationMap.MapToEntity(normalizedCode, name, city);
-        await dbContext.Stations.AddAsync(entity, cancellationToken);
+        dbContext.Stations.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return entity.Map();

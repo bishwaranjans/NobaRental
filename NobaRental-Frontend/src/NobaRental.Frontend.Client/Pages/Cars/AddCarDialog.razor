@@ -16,14 +16,17 @@
                                   Immediate="true" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="CarCategoryDto"
-                               Value="Category"
+                    <MudSelect T="string"
+                               Value="CategoryCode"
                                ValueChanged="OnCategoryChanged"
                                Label="Vehicle Category"
+                               Required="true"
+                               RequiredError="Vehicle category is required"
                                Variant="Variant.Outlined">
-                        <MudSelectItem Value="CarCategoryDto.SmallCar">Small car</MudSelectItem>
-                        <MudSelectItem Value="CarCategoryDto.Combi">Combi</MudSelectItem>
-                        <MudSelectItem Value="CarCategoryDto.Truck">Truck</MudSelectItem>
+                        @foreach (var category in Categories)
+                        {
+                            <MudSelectItem Value="@category.Code">@category.Name</MudSelectItem>
+                        }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6">
@@ -83,3 +86,7 @@
         </MudButton>
     </DialogActions>
 </MudDialog>
+
+
+
+

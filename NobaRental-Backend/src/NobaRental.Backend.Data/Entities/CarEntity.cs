@@ -7,7 +7,9 @@ public class CarEntity : SoftDeletableEntity
 {
     public required string RegistrationNumber { get; set; }
 
-    public CarCategoryValue Category { get; set; }
+    public required string CategoryCode { get; set; }
+
+    public CarCategoryEntity? Category { get; set; }
 
     public long CurrentMeterReadingKm { get; set; }
 

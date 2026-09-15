@@ -94,8 +94,8 @@
                     <strong>@context.RegistrationNumber</strong>
                 </MudTd>
                 <MudTd DataLabel="Category">
-                    <MudChip T="string" Size="Size.Small" Color="@GetCategoryColor(context.Category)">
-                        @GetCategoryName(context.Category)
+                    <MudChip T="string" Size="Size.Small" Color="@GetCategoryColor(context.CategoryCode)">
+                        @(context.CategoryName ?? context.CategoryCode)
                     </MudChip>
                 </MudTd>
                 <MudTd DataLabel="Current Station">
@@ -115,7 +115,7 @@
                     @context.BaseDayRental.ToString("N2") NOK
                 </MudTd>
                 <MudTd DataLabel="Km Rate">
-                    @(context.Category == CarCategoryDto.SmallCar ? "0.00 NOK (incl.)" : $"{context.BaseKmPrice:N2} NOK")
+                    @(!ChargesKilometers(context.CategoryCode) ? "0.00 NOK (incl.)" : $"{context.BaseKmPrice:N2} NOK")
                 </MudTd>
                 <MudTd DataLabel="Actions" Style="text-align: right">
                     @if (context.Status != CarStatusDto.Decommissioned)
@@ -152,3 +152,5 @@
         </MudTable>
     </MudStack>
 </div>
+
+

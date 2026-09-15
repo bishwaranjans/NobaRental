@@ -6,7 +6,6 @@ using NobaRental.Backend.WebApi.Client.Models.Request;
 using NobaRental.Backend.WebApi.Client.Test.Helpers;
 using NSubstitute;
 using RestEase;
-using DtoCarCategory = NobaRental.Backend.WebApi.Client.Models.Values.CarCategoryDto;
 using DtoCarStatus = NobaRental.Backend.WebApi.Client.Models.Values.CarStatusDto;
 
 namespace NobaRental.Backend.WebApi.Client.Test.Tests;
@@ -20,14 +19,14 @@ public sealed class CarApiClientTests : TestWebHost
     {
         // Arrange
         var api = Substitute.For<ICarFleetApi>();
-        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL", BaseDayRental: 500m, BaseKmPrice: 0m);
+        var domainCar = new Car("EV12345", "SMALL", 1500, CarStatus.Available, "OSL", BaseDayRental: 500m, BaseKmPrice: 0m);
 
-        api.RegisterCar("EV12345", CarCategory.SmallCar, 1500, "OSL", 500m, 0m, Arg.Any<CancellationToken>())
+        api.RegisterCar("EV12345", "SMALL", 1500, "OSL", 500m, 0m, Arg.Any<CancellationToken>())
            .Returns(domainCar);
 
         ReplaceService(api);
 
-        var request = new RegisterCarRequest("EV12345", DtoCarCategory.SmallCar, 1500, "OSL", 500m, 0m);
+        var request = new RegisterCarRequest("EV12345", "SMALL", 1500, "OSL", 500m, 0m);
 
         // Act
         using var result = await Client.RegisterCar(request, Token);
@@ -37,7 +36,7 @@ public sealed class CarApiClientTests : TestWebHost
         var content = result.GetContent();
         Assert.NotNull(content);
         Assert.Equal("EV12345", content.RegistrationNumber);
-        Assert.Equal(DtoCarCategory.SmallCar, content.Category);
+        Assert.Equal("SMALL", content.CategoryCode);
         Assert.Equal(1500, content.CurrentMeterReadingKm);
         Assert.Equal(DtoCarStatus.Available, content.Status);
         Assert.Equal("OSL", content.CurrentStationCode);
@@ -52,8 +51,8 @@ public sealed class CarApiClientTests : TestWebHost
         var api = Substitute.For<ICarFleetApi>();
         var domainCars = new List<Car>
         {
-            new("EV12345", CarCategory.SmallCar, 1000, CarStatus.Available, "OSL"),
-            new("BT20001", CarCategory.Combi, 5000, CarStatus.Rented, "BGO"),
+            new("EV12345", "SMALL", 1000, CarStatus.Available, "OSL"),
+            new("BT20001", "COMBI", 5000, CarStatus.Rented, "BGO"),
         };
         var pagedResult = new PagedResult<Car>(domainCars, 2, 1, 10);
 
@@ -79,14 +78,14 @@ public sealed class CarApiClientTests : TestWebHost
         var api = Substitute.For<ICarFleetApi>();
         var domainCars = new List<Car>
         {
-            new("EV12345", CarCategory.SmallCar, 1000, CarStatus.Available, "OSL"),
+            new("EV12345", "SMALL", 1000, CarStatus.Available, "OSL"),
         };
 
-        api.GetAvailableCars("OSL", CarCategory.SmallCar, Arg.Any<CancellationToken>()).Returns(domainCars);
+        api.GetAvailableCars("OSL", "SMALL", Arg.Any<CancellationToken>()).Returns(domainCars);
         ReplaceService(api);
 
         // Act
-        using var result = await Client.GetAvailableCars("OSL", DtoCarCategory.SmallCar, Token);
+        using var result = await Client.GetAvailableCars("OSL", "SMALL", Token);
 
         // Assert
         Assert.True(result.ResponseMessage.IsSuccessStatusCode);
@@ -103,7 +102,7 @@ public sealed class CarApiClientTests : TestWebHost
     {
         // Arrange
         var api = Substitute.For<ICarFleetApi>();
-        var domainCar = new Car("BT20001", CarCategory.Combi, 5000, CarStatus.Available, "SVG");
+        var domainCar = new Car("BT20001", "COMBI", 5000, CarStatus.Available, "SVG");
 
         api.GetCarByRegistrationNumber("BT20001", Arg.Any<CancellationToken>()).Returns(domainCar);
         ReplaceService(api);
@@ -116,7 +115,7 @@ public sealed class CarApiClientTests : TestWebHost
         var content = result.GetContent();
         Assert.NotNull(content);
         Assert.Equal("BT20001", content.RegistrationNumber);
-        Assert.Equal(DtoCarCategory.Combi, content.Category);
+        Assert.Equal("COMBI", content.CategoryCode);
         Assert.Equal("SVG", content.CurrentStationCode);
     }
 
@@ -156,7 +155,7 @@ public sealed class CarApiClientTests : TestWebHost
         // Arrange
         var api = Substitute.For<ICarFleetApi>();
         byte[] rowVersion = [11, 22, 33, 44];
-        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL", RowVersion: rowVersion);
+        var domainCar = new Car("EV12345", "SMALL", 1500, CarStatus.Available, "OSL", RowVersion: rowVersion);
         api.GetCarByRegistrationNumber("EV12345", Arg.Any<CancellationToken>()).Returns(domainCar);
         ReplaceService(api);
 
@@ -176,7 +175,7 @@ public sealed class CarApiClientTests : TestWebHost
         // Arrange
         var api = Substitute.For<ICarFleetApi>();
         byte[] rowVersion = [1, 2, 3, 4];
-        var domainCar = new Car("EV12345", CarCategory.SmallCar, 1500, CarStatus.Available, "OSL", BaseDayRental: 650m, BaseKmPrice: 0m, RowVersion: rowVersion);
+        var domainCar = new Car("EV12345", "SMALL", 1500, CarStatus.Available, "OSL", BaseDayRental: 650m, BaseKmPrice: 0m, RowVersion: rowVersion);
 
         api.UpdateCarTariff("EV12345", 650m, 0m, Arg.Any<byte[]?>(), Arg.Any<CancellationToken>())
            .Returns(domainCar);

@@ -14,7 +14,8 @@ public static class ServiceCollectionExtensions
             [
                 services.AddNobaRentalApiClient<IRentalBookingApiClient>(baseUri),
                 services.AddNobaRentalApiClient<ICarApiClient>(baseUri),
-                services.AddNobaRentalApiClient<IStationApiClient>(baseUri)
+                services.AddNobaRentalApiClient<IStationApiClient>(baseUri),
+                services.AddNobaRentalApiClient<ICarCategoryApiClient>(baseUri)
             ];
 
             if (httpClientBuilderAction is not null)
