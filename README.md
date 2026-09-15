@@ -31,7 +31,7 @@ Pricing multipliers and whether kilometers are charged are configured per catego
   - Seeded across 5 major Norwegian hubs: **OSL** (Oslo Airport Gardermoen), **BGO** (Bergen Airport Flesland), **TRD** (Trondheim Airport Værnes), **SVG** (Stavanger Airport Sola), and **OSLO-C** (Oslo Central Station).
   - Pickups occur at the station where the vehicle is currently located.
   - Returns can be made at **any active station** (one-way rentals supported). Upon return completion, the vehicle is automatically relocated to the return station.
-- **Vehicle Status Lifecycle**: `Available` $\leftrightarrow$ `Rented`, `Maintenance`, or `Decommissioned` (soft-deleted).
+- **Vehicle Status Lifecycle**: `Available` ↔ `Rented`, `Maintenance`, or `Decommissioned` (soft-deleted).
 
 ### 1.4 Core Rental Workflows
 1. **Registration of Car Pickup**:
@@ -52,7 +52,7 @@ Pricing multipliers and whether kilometers are charged are configured per catego
 
 1. **Billing Days Calculation (`numberOfDays`)**:
    - Billed in 24-hour periods, rounded up using ceiling, with a minimum billing of 1 full day:
-     $$\text{numberOfDays} = \max(1, \lceil(\text{returnDateTime} - \text{pickupDateTime}).\text{TotalDays}\rceil)$$
+     `numberOfDays = max(1, ceil((returnDateTime - pickupDateTime).TotalDays))`
 2. **Authoritative Tariffs & Immutability**:
    - Vehicle rates are maintained on `CarEntity` and snapshotted onto `RentalBookingEntity` during pickup, ensuring tamper-proof historical billing records.
 3. **Automated EF Core Soft-Delete & Global Query Filters**:
@@ -96,12 +96,14 @@ CarRental/
 │   └── src/
 │       ├── NobaRental.Backend.Domain/             # Core domain abstractions, models & exceptions
 │       │   ├── ICarFleetApi.cs                    # Car fleet business contract
+│       │   ├── ICarCategoryApi.cs                 # Car category management contract
 │       │   ├── IRentalBookingApi.cs               # Rental booking business contract
 │       │   ├── IStationApi.cs                     # Station management business contract
-│       │   ├── Models/                            # Sealed records: Car, Station, RentalBooking, PagedResult<T>
+│       │   ├── Models/                            # Sealed records: Car, CarCategory, Station, RentalBooking, PagedResult<T>
 │       │   ├── Values/                            # Status enums only: CarStatus, RentalStatus
-│       │   └── Exceptions/                        # RentalConcurrencyException, StationInUseException, etc.
+│       │   └── Exceptions/                        # Category, rental-concurrency & station business exceptions
 │       ├── NobaRental.Backend.Business/           # Core business logic & pricing calculations
+│       │   ├── Api/CarCategoryApi.cs              # Category CRUD, reactivation & in-use protection
 │       │   ├── Api/CarFleetApi.cs                 # Car fleet service implementation
 │       │   ├── Api/RentalBookingApi.cs            # Rental booking service implementation
 │       │   ├── Api/StationApi.cs                  # Station management service implementation
@@ -113,7 +115,7 @@ CarRental/
 │       │   ├── Entities/                          # CarCategoryEntity, CarEntity, StationEntity, RentalBookingEntity
 │       │   ├── Entities/Common/                   # IAuditableEntity, ISoftDeletable, AuditableEntity, SoftDeletableEntity
 │       │   ├── Configurations/                    # Fluent entity configurations, query filters & indexes
-│       │   ├── Migrations/                        # Generated EF Core migrations with seed data
+│       │   ├── Migrations/                        # Single baseline migration with seeded categories
 │       │   └── NobaRentalDbContext.cs             # DbContext with query filters, interceptors & unicode conventions
 │       ├── NobaRental.Backend.Data.MigrationStartup/ # Dedicated EF Core design-time migration host
 │       │   └── Program.cs                         # Configures DbContext for EF Core CLI tools
@@ -121,19 +123,21 @@ CarRental/
 │       ├── NobaRental.Backend.WebApi/             # ASP.NET Core REST API
 │       │   ├── Auth/                              # AuthConstants (scopes & policy names)
 │       │   ├── Controllers/CarsController.cs      # Fleet REST API [Authorize(FleetManage / RentalsRead)]
+│       │   ├── Controllers/CarCategoriesController.cs # Category REST API [Authorize(FleetManage)]
 │       │   ├── Controllers/StationsController.cs  # Station REST API [Authorize(FleetManage / RentalsRead)]
 │       │   ├── Controllers/RentalBookingsController.cs # Rental REST API [Authorize(RentalsPickup / RentalsReturn / RentalsRead)]
 │       │   ├── Helpers/ETagHelper.cs              # ETag generation, If-Match & If-None-Match header parsing
 │       │   ├── Middleware/GlobalExceptionHandler.cs # Centralized RFC 7807 ProblemDetails exception handling
 │       │   ├── Startups/                          # AuthenticationStartup, RateLimitingStartup, ValidationStartup, SwaggerStartup, HealthStartup
-│       │   ├── Validators/                        # FluentValidation request validators
-│       │   └── Mapping/                           # Domain Models <-> Client Response DTOs & Enum Value Mappers
+│       │   ├── Validators/                        # FluentValidation request validators, including categories
+│       │   └── Mapping/                           # Domain models <-> client response DTOs
 │       ├── NobaRental.Backend.WebApi.Client/      # Shared Client library
 │       │   ├── ICarApiClient.cs                   # RestEase typed client for cars
+│       │   ├── ICarCategoryApiClient.cs            # RestEase typed client for categories
 │       │   ├── IStationApiClient.cs               # RestEase typed client for stations
 │       │   ├── IRentalBookingApiClient.cs         # RestEase typed client for rentals & price estimates
-│       │   ├── Models/Request/                    # DTO request records (RegisterPickupRequest, ReturnRentalRequest, etc.)
-│       │   ├── Models/Response/                   # DTO response records & PagedResultResponse<T>
+│       │   ├── Models/Request/                    # DTO requests, including category create/update models
+│       │   ├── Models/Response/                   # DTO responses, including CarCategoryResponse and PagedResultResponse<T>
 │       │   └── ServiceCollectionExtensions.cs     # Typed client DI registration
 │       └── NobaRental.Backend.WebApi.Client.Test/ # WebApplicationFactory integration, auth, rate-limiting & concurrency tests (52 tests)
 ├── NobaRental-Frontend/
@@ -142,7 +146,7 @@ CarRental/
 │       └── NobaRental.Frontend.Client/            # Interactive Blazor UI with MudBlazor components
 │           ├── Pages/Cars/                        # CarsPage (table, server reload, decommission), AddCarDialog
 │           ├── Pages/Stations/                    # StationsPage (table, CRUD), StationDialog
-│           ├── Pages/Categories/                  # CategoriesPage (table, CRUD), CategoryDialog
+│           ├── Pages/Categories/                  # CategoriesPage (table, CRUD), CategoryDialog; route: /categories
 │           └── Pages/Rentals/                     # RentalsPage (server reload, routes), PickupDialog, ReturnDialog
 └── NobaRental-Shared/
     └── NobaRental.Shared.ServiceDefaults/        # Observability, OpenTelemetry, health checks
@@ -309,20 +313,20 @@ Fine-grained permissions enforce least-privilege access across all controller ac
 - **Token Acquisition**: `TokenProvider` requests JWT tokens using the OAuth2 `client_credentials` grant against `https://dev-nobarental.eu.auth0.com/oauth/token`.
 - **HybridCache Caching**: Tokens are cached in .NET 10's `HybridCache` with a 5-minute safety threshold before actual token expiration (`lifetime - 5 minutes`) to prevent edge-case 401s on in-flight requests.
 - **Dual Injection Points**:
-  1. **Blazor Server / C# Clients**: `BearerTokenHandler` (`DelegatingHandler`) automatically injects `Authorization: Bearer <token>` into typed RestEase client calls (`IRentalBookingApiClient`, `ICarApiClient`, `IStationApiClient`).
-  2. **Blazor WebAssembly**: YARP Reverse Proxy request transform injects the Bearer token before forwarding `/api/**` calls from the browser to the backend.
+  1. **Blazor Server / C# Clients**: `BearerTokenHandler` (`DelegatingHandler`) automatically injects the `Authorization: Bearer <token>` header into typed RestEase client calls (`IRentalBookingApiClient`, `ICarApiClient`, `IStationApiClient`).
+  2. **Blazor WebAssembly**: YARP Reverse Proxy request transform injects the bearer token before forwarding `/api/**` calls from the browser to the backend.
 
-### 6.3 Swagger UI Bearer Authentication
-SwaggerGen is configured with OpenAPI Bearer authentication in `SwaggerStartup.cs`:
+### 6.3 Swagger UI Authentication
+SwaggerGen is configured with OpenAPI bearer authentication in `SwaggerStartup.cs`:
 1. Acquire a token via curl:
    ```bash
    curl --request POST \
      --url https://dev-nobarental.eu.auth0.com/oauth/token \
      --header 'content-type: application/json' \
      --data '{
-       "client_id": "fcRdx2LuqQzc232viukPNzqJ84peNu7Q",
-       "client_secret": "6G_5SIn-IGWauphhAOsCn0JBPnQg_WQeH8F6h2HL7xcHpdpvbelcL2Z-vSKFmKjW",
-       "audience": "https://api.nobarental.com",
+       "client_id": "<auth0-client-id>",
+       "client_secret": "<auth0-client-secret>",
+       "audience": "<api-audience>",
        "grant_type": "client_credentials",
        "scope": "rentals:pickup rentals:return rentals:read fleet:manage"
      }'
